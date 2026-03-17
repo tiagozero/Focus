@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FOCUS — Pomodoro Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Bebas+Neue&family=DM+Serif+Display:ital@0;1&family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   /* ── THEME DEFINITIONS ──────────────────────────────────────────────────── */
   [data-theme="brutalist"] {
@@ -15,8 +14,8 @@
     --tag-high: #ff4d00; --tag-med: #e0a020; --tag-low: #3a9e58;
     --prog-default: #ff4d00;
     --surface2: #f0ede6;
-    --font-title: 'Bebas Neue', sans-serif;
-    --font-body: 'Space Mono', monospace;
+    --font-title: 'Impact', 'Arial Narrow', ui-sans-serif, sans-serif;
+    --font-body: 'Courier New', 'Courier', ui-monospace, monospace;
   }
   [data-theme="midnight"] {
     --bg: #0a0a0f; --surface: #13131a; --border: #2e2e40; --text: #e8e6f0;
@@ -26,8 +25,8 @@
     --tag-high: #fa6c9a; --tag-med: #fab96c; --tag-low: #6cfaa0;
     --prog-default: #7c6cfa;
     --surface2: #1a1a26;
-    --font-title: 'Syne', sans-serif;
-    --font-body: 'JetBrains Mono', monospace;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
   }
   [data-theme="paper"] {
     --bg: #faf8f3; --surface: #ffffff; --border: #c8bfa8; --text: #2c2416;
@@ -37,8 +36,8 @@
     --tag-high: #c0392b; --tag-med: #d4840a; --tag-low: #27ae60;
     --prog-default: #c0392b;
     --surface2: #f0ece2;
-    --font-title: 'DM Serif Display', serif;
-    --font-body: 'Space Mono', monospace;
+    --font-title: 'Georgia', 'Times New Roman', ui-serif, serif;
+    --font-body: 'Courier New', 'Courier', ui-monospace, monospace;
   }
   [data-theme="forest"] {
     --bg: #1a2318; --surface: #212c1f; --border: #3a4d36; --text: #c8d9c2;
@@ -48,8 +47,8 @@
     --tag-high: #e88c4a; --tag-med: #c8d048; --tag-low: #8bc34a;
     --prog-default: #8bc34a;
     --surface2: #263022;
-    --font-title: 'Syne', sans-serif;
-    --font-body: 'JetBrains Mono', monospace;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
   }
   [data-theme="neon"] {
     --bg: #0d0d0d; --surface: #111; --border: #1f1f1f; --text: #f0f0f0;
@@ -59,8 +58,8 @@
     --tag-high: #ff0066; --tag-med: #ffcc00; --tag-low: #00ffcc;
     --prog-default: #00ffcc;
     --surface2: #181818;
-    --font-title: 'Syne', sans-serif;
-    --font-body: 'JetBrains Mono', monospace;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
   }
 
   /* ── RESET ────────────────────────────────────────────────────────────────── */
@@ -573,6 +572,7 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let stats      = JSON.parse(localStorage.getItem('pomo_stats')   || '{"sessions":0,"minutes":0,"tasks":0}');
 let sessionLog = JSON.parse(localStorage.getItem('pomo_history') || '[]');
@@ -602,14 +602,15 @@ settingsBtn.addEventListener('click', () => overlay.classList.add('open'));
 closeBtn.addEventListener('click',    () => overlay.classList.remove('open'));
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 
-// Theme swatches
-const currentTheme = localStorage.getItem('pomo_theme') || 'brutalist';
-document.documentElement.setAttribute('data-theme', currentTheme);
+// Theme swatches — sanitize stored theme (old versions used 'light'/'dark')
+const VALID_THEMES = ['brutalist','midnight','paper','forest','neon'];
+let storedTheme = localStorage.getItem('pomo_theme') || 'brutalist';
+if (!VALID_THEMES.includes(storedTheme)) storedTheme = 'brutalist';
+document.documentElement.setAttribute('data-theme', storedTheme);
+localStorage.setItem('pomo_theme', storedTheme);
 
 document.querySelectorAll('.theme-swatch').forEach(sw => {
-  if (sw.dataset.theme === currentTheme) sw.classList.add('active');
-  else sw.classList.remove('active');
-
+  sw.classList.toggle('active', sw.dataset.theme === storedTheme);
   sw.addEventListener('click', () => {
     const t = sw.dataset.theme;
     document.documentElement.setAttribute('data-theme', t);
@@ -959,10 +960,16 @@ function addNewRow(defaults={}) {
 }
 
 function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
-function toggleSettings(btn){ btn.closest('tr').querySelector('.btn-settings-row').classList.toggle('active'); }
-function resetRow(btn){ btn.closest('tr').querySelector('.goal-input').dispatchEvent(new Event('input')); }
-function adjustTime(btn,d){ btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d})); }
-function removeRow(btn){ btn.closest('tr').remove(); saveRows(); }
+
+// Expose to window so inline onclick attributes can reach them inside DOMContentLoaded
+window.toggleSettings = btn => btn.closest('tr').querySelector('.btn-settings-row').classList.toggle('active');
+window.resetRow       = btn => btn.closest('tr').querySelector('.goal-input').dispatchEvent(new Event('input'));
+window.adjustTime     = (btn,d) => btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d}));
+window.removeRow      = btn => { btn.closest('tr').remove(); saveRows(); };
+window.addNewRow      = addNewRow;
+window.addGoal        = addGoal;
+window.deleteGoal     = deleteGoal;
+window.clearHistory   = clearHistory;
 
 // ── TABS ──────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -1066,6 +1073,8 @@ document.getElementById('restoreFile').onchange=e=>{
 saveStats(); renderHistory(); renderGoals(); applyHistoryCollapse();
 if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
 else addNewRow();
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
