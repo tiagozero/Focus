@@ -404,6 +404,82 @@
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   .divider { height: 1px; background: var(--border); opacity: 0.4; }
+
+  /* ── MOBILE RESPONSIVENESS ─────────────────────────────────────────────────── */
+  @media (max-width: 700px) {
+    body { padding: 16px 12px 60px; }
+    
+    /* Header Structure */
+    .app-header { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+    .app-title { font-size: 2.5rem; }
+    .header-controls { justify-content: flex-start; gap: 8px; width: 100%; flex-wrap: wrap; }
+    .icon-btn { flex: 1 1 calc(50% - 8px); text-align: center; justify-content: center; height: 38px; }
+    
+    /* Stats Layout */
+    .stats-bar { padding: 0; }
+    .stat-cell { padding: 10px 4px; }
+    .stat-num { font-size: 1.5rem; }
+
+    /* Convert Table to Flowing Cards */
+    #taskTable, #taskTable tbody, #taskTable tr, #taskTable td { display: block; width: 100%; }
+    #taskTable thead { display: none; }
+    #taskTable { border: none; box-shadow: none; background: transparent; }
+
+    .task-row {
+      display: grid !important;
+      grid-template-areas:
+        "time priority handle"
+        "activity activity activity"
+        "actions actions actions";
+      grid-template-columns: 1fr auto 40px;
+      align-items: center;
+      margin-bottom: 16px;
+      border: 2px solid var(--border) !important;
+      box-shadow: var(--shadow);
+      background: var(--row-bg);
+    }
+    .task-row td { padding: 0; border: none !important; }
+
+    .time-cell { grid-area: time; text-align: left; padding: 12px 16px !important; border-bottom: 1px solid var(--border) !important; font-size: 1.8rem; }
+    .priority-cell { grid-area: priority; padding: 12px 16px !important; border-bottom: 1px solid var(--border) !important; }
+    .drag-handle { grid-area: handle; padding: 12px 0 !important; border-bottom: 1px solid var(--border) !important; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+
+    .activity-cell { grid-area: activity; border-bottom: 1px solid var(--border) !important; }
+    .tag-input { width: 100%; margin-top: 4px; }
+
+    /* Reorganizing action buttons priority visually */
+    .actions-cell { grid-area: actions; }
+    .actions { height: auto; padding: 10px; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+    .actions .btn { flex: 1 1 calc(20% - 8px); padding: 8px 0; font-size: 0.65rem; }
+    .actions .btn.start { flex: 1 1 100%; order: -1; padding: 12px; font-size: 0.85rem; letter-spacing: 2px; }
+
+    /* Drag & Drop Handlers inside Mobile Grid */
+    .drag-placeholder { display: block !important; height: 160px !important; border: 2px dashed var(--accent) !important; margin-bottom: 16px; background: transparent !important; }
+    .drag-placeholder td { display: none !important; }
+    
+    .drag-ghost { display: block; border: none !important; box-shadow: none !important; background: transparent !important; }
+    .drag-ghost table, .drag-ghost tbody { display: block; width: 100%; }
+    .drag-ghost .task-row { box-shadow: 6px 6px 0 var(--accent) !important; border-color: var(--accent) !important; margin: 0; }
+
+    /* Goals / Form Adjustments */
+    .goal-form { flex-direction: column; gap: 12px; align-items: stretch; }
+    .goal-form-field { width: 100%; }
+    .goal-form-field input { width: 100% !important; }
+    .goal-form > .btn { padding: 12px; margin-top: 4px; }
+    .goal-top { flex-direction: column; gap: 8px; }
+    .goal-right { text-align: left; }
+
+    /* History Stack */
+    .history-item { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; }
+    .history-duration { align-self: flex-start; font-size: 1.4rem; margin-top: 2px; }
+
+    /* Settings UI Stack */
+    .btn-settings-row { flex-direction: column; align-items: stretch; gap: 8px; }
+    .btn-settings-row label { display: block; margin-bottom: 4px; }
+    .settings-input { width: 100%; }
+    .theme-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .color-picker-row { gap: 12px; }
+  }
 </style>
 </head>
 <body>
