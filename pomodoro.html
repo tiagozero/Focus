@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="brutalist">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FOCUS — Pomodoro Tracker</title>
+<style>
+  /* ── THEME DEFINITIONS ──────────────────────────────────────────────────── */
+  [data-theme="brutalist"] {
+    --bg: #f5f2eb; --surface: #ffffff; --border: #111111; --text: #111111;
+    --text-muted: #777; --accent: #ff4d00; --accent2: #0047ff;
+    --shadow: 4px 4px 0 #111; --row-bg: #fff;
+    --header-bg: #111111; --header-text: #f5f2eb;
+    --tag-high: #ff4d00; --tag-med: #e0a020; --tag-low: #3a9e58;
+    --prog-default: #ff4d00;
+    --surface2: #f0ede6;
+    --font-title: 'Impact', 'Arial Narrow', ui-sans-serif, sans-serif;
+    --font-body: 'Courier New', 'Courier', ui-monospace, monospace;
+  }
+  [data-theme="midnight"] {
+    --bg: #0a0a0f; --surface: #13131a; --border: #2e2e40; --text: #e8e6f0;
+    --text-muted: #5a5870; --accent: #7c6cfa; --accent2: #fa6c9a;
+    --shadow: 0 4px 24px rgba(124,108,250,0.18); --row-bg: #13131a;
+    --header-bg: #1e1e2e; --header-text: #e8e6f0;
+    --tag-high: #fa6c9a; --tag-med: #fab96c; --tag-low: #6cfaa0;
+    --prog-default: #7c6cfa;
+    --surface2: #1a1a26;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
+  }
+  [data-theme="paper"] {
+    --bg: #faf8f3; --surface: #ffffff; --border: #c8bfa8; --text: #2c2416;
+    --text-muted: #9a8e78; --accent: #c0392b; --accent2: #2980b9;
+    --shadow: 2px 3px 12px rgba(0,0,0,0.08); --row-bg: #fff;
+    --header-bg: #2c2416; --header-text: #faf8f3;
+    --tag-high: #c0392b; --tag-med: #d4840a; --tag-low: #27ae60;
+    --prog-default: #c0392b;
+    --surface2: #f0ece2;
+    --font-title: 'Georgia', 'Times New Roman', ui-serif, serif;
+    --font-body: 'Courier New', 'Courier', ui-monospace, monospace;
+  }
+  [data-theme="forest"] {
+    --bg: #1a2318; --surface: #212c1f; --border: #3a4d36; --text: #c8d9c2;
+    --text-muted: #6a7d64; --accent: #8bc34a; --accent2: #4caf9a;
+    --shadow: 0 4px 20px rgba(0,0,0,0.4); --row-bg: #212c1f;
+    --header-bg: #131a12; --header-text: #c8d9c2;
+    --tag-high: #e88c4a; --tag-med: #c8d048; --tag-low: #8bc34a;
+    --prog-default: #8bc34a;
+    --surface2: #263022;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
+  }
+  [data-theme="neon"] {
+    --bg: #0d0d0d; --surface: #111; --border: #1f1f1f; --text: #f0f0f0;
+    --text-muted: #555; --accent: #00ffcc; --accent2: #ff0066;
+    --shadow: 0 0 20px rgba(0,255,204,0.2); --row-bg: #111;
+    --header-bg: #000; --header-text: #00ffcc;
+    --tag-high: #ff0066; --tag-med: #ffcc00; --tag-low: #00ffcc;
+    --prog-default: #00ffcc;
+    --surface2: #181818;
+    --font-title: ui-sans-serif, 'Arial Black', 'Helvetica Neue', sans-serif;
+    --font-body: ui-monospace, 'Menlo', 'Consolas', monospace;
+  }
+
+  /* ── RESET ────────────────────────────────────────────────────────────────── */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 28px 20px 60px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── SETTINGS MODAL ───────────────────────────────────────────────────────── */
+  .settings-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+  }
+  .settings-overlay.open { opacity: 1; pointer-events: all; }
+  .settings-modal {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow);
+    width: 480px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .settings-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 2px solid var(--border);
+    background: var(--header-bg);
+    color: var(--header-text);
+  }
+  .settings-header h2 {
+    font-family: var(--font-title);
+    font-size: 1.4rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  .settings-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--header-text); font-size: 1.4rem; line-height: 1;
+    opacity: 0.7; transition: opacity 0.15s;
+  }
+  .settings-close:hover { opacity: 1; }
+  .settings-body { padding: 24px 20px; display: flex; flex-direction: column; gap: 28px; }
+  .settings-section { display: flex; flex-direction: column; gap: 12px; }
+  .settings-label {
+    font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--text-muted); font-weight: 700;
+  }
+
+  /* Theme Grid */
+  .theme-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .theme-swatch {
+    border: 2px solid var(--border); cursor: pointer; padding: 10px 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: all 0.15s; background: var(--surface);
+    position: relative;
+  }
+  .theme-swatch:hover { border-color: var(--accent); }
+  .theme-swatch.active { border-color: var(--accent); }
+  .theme-swatch.active::after {
+    content: '✓';
+    position: absolute; top: 3px; right: 5px;
+    font-size: 0.6rem; color: var(--accent);
+  }
+  .swatch-dots { display: flex; gap: 3px; }
+  .swatch-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .swatch-name { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+  /* Color Picker */
+  .color-picker-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .color-preset {
+    width: 28px; height: 28px; border-radius: 4px; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.15s;
+    position: relative;
+  }
+  .color-preset:hover { border-color: var(--text); transform: scale(1.1); }
+  .color-preset.active { border-color: var(--text); }
+  .color-preset.active::after {
+    content: '';
+    position: absolute; inset: 4px;
+    border: 2px solid rgba(255,255,255,0.8);
+    border-radius: 2px;
+  }
+  .color-custom-wrap { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  .color-custom-wrap label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  input[type="color"] {
+    width: 36px; height: 28px; border: 2px solid var(--border);
+    background: none; cursor: pointer; padding: 0; border-radius: 0;
+  }
+
+  /* ── HEADER ──────────────────────────────────────────────────────────────── */
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    max-width: 900px; margin: 0 auto 24px;
+  }
+  .app-title {
+    font-family: var(--font-title);
+    font-size: 3rem; letter-spacing: 4px; color: var(--text); line-height: 1;
+  }
+  .app-title span { color: var(--accent); }
+  .header-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .icon-btn {
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; height: 36px; padding: 0 12px; font-size: 0.62rem;
+    font-family: var(--font-body); font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; display: flex; align-items: center; gap: 5px;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .icon-btn:hover { background: var(--border); color: var(--bg); }
+  .icon-btn.active { background: var(--border); color: var(--bg); }
+  .icon-btn.settings-btn {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+  }
+  .icon-btn.settings-btn:hover { opacity: 0.85; }
+
+  /* ── STATS BAR ────────────────────────────────────────────────────────────── */
+  .stats-bar {
+    max-width: 900px; margin: 0 auto 20px;
+    display: grid; grid-template-columns: repeat(3,1fr);
+    border: 2px solid var(--border); background: var(--surface); box-shadow: var(--shadow);
+  }
+  .stat-cell { padding: 14px 16px; border-right: 2px solid var(--border); text-align: center; }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num { font-family: var(--font-title); font-size: 2rem; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-top: 3px; }
+
+  /* ── TABS ──────────────────────────────────────────────────────────────────── */
+  .tabs-wrap {
+    max-width: 900px; margin: 0 auto 0;
+    display: flex; border: 2px solid var(--border); border-bottom: none;
+  }
+  .tab-btn {
+    flex: 1; padding: 10px; font-family: var(--font-title); font-size: 1rem;
+    letter-spacing: 2px; border: none; background: var(--bg); color: var(--text-muted);
+    cursor: pointer; border-right: 1px solid var(--border); transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { background: var(--surface); color: var(--text); }
+  .tab-btn:hover:not(.active) { background: var(--surface); color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── TABLE ──────────────────────────────────────────────────────────────────── */
+  .container { max-width: 900px; margin: 0 auto; }
+  #taskTable { width: 100%; border-collapse: collapse; border: 2px solid var(--border); box-shadow: var(--shadow); }
+  #taskTable thead { background: var(--header-bg); color: var(--header-text); }
+  #taskTable th { padding: 10px 14px; font-size: 0.58rem; letter-spacing: 3px; text-transform: uppercase; font-weight: 700; text-align: left; }
+  #taskTable th.center { text-align: center; }
+  .task-row td { border: 1px solid var(--border); background: var(--row-bg); vertical-align: middle; transition: background 0.3s; }
+  .task-row.done td { opacity: 0.5; }
+  .task-row.dragging { opacity: 0.4; }
+  .task-row.drag-over td { box-shadow: inset 0 3px 0 var(--accent); }
+
+  /* ── TIME CELL ──────────────────────────────────────────────────────────────── */
+  .time-cell {
+    width: 90px; text-align: center; font-family: var(--font-title);
+    font-size: 1.5rem; color: var(--text); padding: 0 8px; white-space: nowrap;
+  }
+  .time-cell.urgent { color: var(--accent); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── ACTIVITY / PROGRESS BAR ─────────────────────────────────────────────── */
+  .activity-cell { padding: 0; }
+  .activity-stage { position: relative; width: 100%; }
+  .activity-main { height: 54px; position: relative; overflow: hidden; }
+  .progress-bar-bg {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: var(--prog-color, var(--accent));
+    width: 0%;
+    z-index: 1; transition: width 0.8s ease;
+    /* Slight opacity so text is still legible */
+    opacity: 0.85;
+  }
+  .activity-input {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%; border: none; padding: 0 12px 0 68px;
+    font-family: var(--font-body); font-size: 0.85rem;
+    background: transparent; outline: none; z-index: 6;
+    color: transparent; caret-color: var(--text); text-align: center;
+  }
+  .name-display { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .name-dark, .name-light {
+    position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding-left: 68px; padding-right: 12px;
+    font-family: var(--font-body); font-size: 0.85rem;
+    white-space: nowrap; overflow: hidden;
+  }
+  .name-dark  { color: var(--text); z-index: 2; }
+  .name-light { color: #fff; z-index: 3; clip-path: inset(0 100% 0 0); mix-blend-mode: normal; }
+  /* For very light progress colors on light themes, keep contrast */
+  [data-theme="brutalist"] .name-light,
+  [data-theme="paper"] .name-light { color: #fff; }
+  .name-placeholder { opacity: 0.38; }
+  .pct-text {
+    position: absolute; left: 0; width: 60px; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-title); font-size: 1rem;
+    z-index: 5; color: var(--text); pointer-events: none; font-weight: 700;
+  }
+
+  /* ── TAGS ROW ─────────────────────────────────────────────────────────────── */
+  .tags-row {
+    min-height: 26px; padding: 4px 8px 4px 10px;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    border-top: 1px dashed var(--border); background: var(--surface2);
+  }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
+    border: 1.5px solid var(--border); font-size: 0.58rem;
+    font-family: var(--font-body); text-transform: uppercase; letter-spacing: 1px;
+    background: var(--bg); color: var(--text);
+  }
+  .tag-chip .tag-remove { cursor: pointer; opacity: 0.5; font-size: 0.75rem; line-height: 1; margin-left: 2px; }
+  .tag-chip .tag-remove:hover { opacity: 1; color: var(--accent); }
+  .tag-input {
+    border: none; background: transparent; font-family: var(--font-body);
+    font-size: 0.6rem; color: var(--text); outline: none; width: 110px; text-transform: uppercase;
+  }
+  .tag-input::placeholder { color: var(--text-muted); opacity: 0.6; font-style: italic; }
+
+  /* ── PRIORITY ───────────────────────────────────────────────────────────────── */
+  .priority-cell { width: 90px; text-align: center; padding: 0 6px; }
+  .priority-select {
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    font-family: var(--font-body); font-size: 0.6rem; padding: 4px;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 100%; outline: none;
+  }
+  .priority-select.high { border-color: var(--tag-high); color: var(--tag-high); }
+  .priority-select.med  { border-color: var(--tag-med);  color: var(--tag-med);  }
+  .priority-select.low  { border-color: var(--tag-low);  color: var(--tag-low);  }
+
+  /* ── DRAG ───────────────────────────────────────────────────────────────────── */
+  .drag-handle { width: 28px; text-align: center; cursor: grab; color: var(--text-muted); font-size: 1.1rem; padding: 0; user-select: none; touch-action: none; }
+  .drag-handle:hover { color: var(--text); }
+  .task-row.is-dragging { opacity: 0; pointer-events: none; }
+  .drag-ghost { position: fixed; pointer-events: none; z-index: 9999; background: var(--surface); border: 2px solid var(--accent); box-shadow: 6px 6px 0 var(--accent); opacity: 0.95; left: 0; top: 0; }
+  .drag-placeholder td { background: transparent !important; border: 2px dashed var(--accent) !important; height: 58px; }
+  .drag-ghost { border-collapse: collapse; }
+
+  /* ── ACTIONS ────────────────────────────────────────────────────────────────── */
+  .actions-cell { width: 230px; padding: 0 6px; }
+  .actions { display: flex; gap: 3px; justify-content: center; align-items: center; height: 54px; }
+  .btn {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 5px 7px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:hover { background: var(--border); color: var(--bg); }
+  .btn.start { background: var(--border); color: var(--bg); }
+  .btn.start:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.danger { color: var(--tag-high); border-color: var(--tag-high); }
+  .btn.danger:hover { background: var(--tag-high); color: #fff; }
+  .btn.min-btn { color: var(--text-muted); border-color: var(--border); }
+  .btn.min-btn:hover { background: var(--border); color: var(--bg); border-color: var(--border); }
+  .btn-settings-row {
+    display: none; background: var(--surface2);
+    border-top: 1px dashed var(--border); padding: 8px 14px;
+    gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .btn-settings-row.active { display: flex; }
+  .btn-settings-row label { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
+  .settings-input {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    font-family: var(--font-body); font-size: 0.8rem; padding: 3px 6px; width: 65px; outline: none;
+  }
+
+  /* ── ADD BTN ────────────────────────────────────────────────────────────────── */
+  .add-btn {
+    width: 100%; padding: 14px; border: 2px solid var(--border); background: var(--surface);
+    color: var(--text); font-family: var(--font-title); font-size: 1.1rem; letter-spacing: 3px;
+    cursor: pointer; margin-top: 10px; transition: all 0.15s; box-shadow: var(--shadow);
+    text-transform: uppercase;
+  }
+  .add-btn:hover { background: var(--border); color: var(--bg); }
+
+  /* ── HISTORY ────────────────────────────────────────────────────────────────── */
+  .history-panel { max-width: 900px; margin: 16px auto 0; border: 2px solid var(--border); box-shadow: var(--shadow); background: var(--surface); }
+  .panel-header { background: var(--header-bg); color: var(--header-text); padding: 9px 14px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 3px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+  .panel-header-btns { display: flex; gap: 12px; align-items: center; }
+  .panel-hdr-btn { background: none; border: none; color: var(--header-text); cursor: pointer; font-family: inherit; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; }
+  .panel-hdr-btn:hover { opacity: 1; }
+  .collapse-icon { font-size: 0.65rem; transition: transform 0.2s; display: inline-block; }
+  .panel-body { overflow: hidden; transition: max-height 0.35s ease; max-height: 400px; }
+  .panel-body.collapsed { max-height: 0; }
+  .history-panel.hidden { display: none; }
+  .history-list { max-height: 240px; overflow-y: auto; }
+  .history-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.75rem; gap: 10px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-name { font-weight: 700; }
+  .history-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .history-tag { font-size: 0.55rem; padding: 1px 5px; border: 1px solid var(--border); text-transform: uppercase; letter-spacing: 1px; }
+  .history-meta { color: var(--text-muted); font-size: 0.6rem; margin-top: 3px; }
+  .history-duration { font-family: var(--font-title); font-size: 1.2rem; color: var(--accent); flex-shrink: 0; }
+  .history-empty { padding: 20px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
+
+  /* ── GOALS ──────────────────────────────────────────────────────────────────── */
+  .goals-panel { max-width: 900px; margin: 0 auto; border: 2px solid var(--border); box-shadow: var(--shadow); background: var(--surface); }
+  .goal-form { padding: 16px; border-bottom: 2px solid var(--border); background: var(--surface2); display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .goal-form-field { display: flex; flex-direction: column; gap: 4px; }
+  .goal-form-field label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+  .goal-form-field input { border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font-body); font-size: 0.75rem; padding: 5px 8px; outline: none; width: 140px; }
+  .goal-form-field input.narrow { width: 80px; }
+  .goals-list { padding: 0; }
+  .goal-item { border-bottom: 1px solid var(--border); padding: 14px 16px; }
+  .goal-item:last-child { border-bottom: none; }
+  .goal-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 10px; }
+  .goal-info { flex: 1; }
+  .goal-name { font-weight: 700; font-size: 0.9rem; }
+  .goal-tag-list { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .goal-tag { font-size: 0.55rem; padding: 1px 5px; border: 1px solid var(--border); text-transform: uppercase; letter-spacing: 1px; }
+  .goal-right { text-align: right; flex-shrink: 0; }
+  .goal-nums { font-family: var(--font-title); font-size: 1.5rem; color: var(--accent); line-height: 1; }
+  .goal-unit { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .goal-bar-wrap { height: 8px; background: var(--bg); border: 1.5px solid var(--border); margin-bottom: 8px; overflow: hidden; border-radius: 2px; }
+  .goal-bar-fill { height: 100%; background: var(--accent); transition: width 0.6s ease; border-radius: 2px; }
+  .goal-bar-fill.complete { background: var(--tag-low); }
+  .goal-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; color: var(--text-muted); }
+  .goal-actions { display: flex; gap: 5px; }
+  .goal-btn { font-size: 0.55rem; padding: 3px 8px; }
+  .goal-empty { padding: 28px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
+  .goal-info-bar { padding: 8px 16px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px dashed var(--border); font-style: italic; }
+
+  /* ── MISC ────────────────────────────────────────────────────────────────────── */
+  .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; animation: confettiFall 1.2s ease-in forwards; pointer-events: none; z-index: 9999; }
+  @keyframes confettiFall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+  @keyframes flashGreen { 0%{background:var(--row-bg)} 30%{background:rgba(139,195,74,0.2)} 100%{background:var(--row-bg)} }
+  .task-row.flash td { animation: flashGreen 1s ease forwards; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .divider { height: 1px; background: var(--border); opacity: 0.4; }
+</style>
+</head>
+<body>
+
+<!-- ── SETTINGS MODAL ─────────────────────────────────────────────────────── -->
+<div class="settings-overlay" id="settingsOverlay">
+  <div class="settings-modal">
+    <div class="settings-header">
+      <h2>⚙ Settings</h2>
+      <button class="settings-close" id="settingsClose">✕</button>
+    </div>
+    <div class="settings-body">
+
+      <!-- Theme -->
+      <div class="settings-section">
+        <div class="settings-label">Theme</div>
+        <div class="theme-grid" id="themeGrid">
+          <div class="theme-swatch active" data-theme="brutalist">
+            <div class="swatch-dots">
+              <div class="swatch-dot" style="background:#f5f2eb;border:1px solid #111"></div>
+              <div class="swatch-dot" style="background:#ff4d00"></div>
+              <div class="swatch-dot" style="background:#111"></div>
+            </div>
+            <div class="swatch-name">Brutalist</div>
+          </div>
+          <div class="theme-swatch" data-theme="midnight">
+            <div class="swatch-dots">
+              <div class="swatch-dot" style="background:#0a0a0f"></div>
+              <div class="swatch-dot" style="background:#7c6cfa"></div>
+              <div class="swatch-dot" style="background:#fa6c9a"></div>
+            </div>
+            <div class="swatch-name">Midnight</div>
+          </div>
+          <div class="theme-swatch" data-theme="paper">
+            <div class="swatch-dots">
+              <div class="swatch-dot" style="background:#faf8f3;border:1px solid #c8bfa8"></div>
+              <div class="swatch-dot" style="background:#c0392b"></div>
+              <div class="swatch-dot" style="background:#2c2416"></div>
+            </div>
+            <div class="swatch-name">Paper</div>
+          </div>
+          <div class="theme-swatch" data-theme="forest">
+            <div class="swatch-dots">
+              <div class="swatch-dot" style="background:#1a2318"></div>
+              <div class="swatch-dot" style="background:#8bc34a"></div>
+              <div class="swatch-dot" style="background:#4caf9a"></div>
+            </div>
+            <div class="swatch-name">Forest</div>
+          </div>
+          <div class="theme-swatch" data-theme="neon">
+            <div class="swatch-dots">
+              <div class="swatch-dot" style="background:#0d0d0d"></div>
+              <div class="swatch-dot" style="background:#00ffcc"></div>
+              <div class="swatch-dot" style="background:#ff0066"></div>
+            </div>
+            <div class="swatch-name">Neon</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Progress bar color -->
+      <div class="settings-section">
+        <div class="settings-label">Progress Bar Color</div>
+        <div class="color-picker-row" id="colorPresets">
+          <div class="color-preset active" data-color="#ff4d00" style="background:#ff4d00" title="Flame"></div>
+          <div class="color-preset" data-color="#7c6cfa" style="background:#7c6cfa" title="Violet"></div>
+          <div class="color-preset" data-color="#00ffcc" style="background:#00ffcc" title="Cyan"></div>
+          <div class="color-preset" data-color="#8bc34a" style="background:#8bc34a" title="Lime"></div>
+          <div class="color-preset" data-color="#fa6c9a" style="background:#fa6c9a" title="Pink"></div>
+          <div class="color-preset" data-color="#fab96c" style="background:#fab96c" title="Amber"></div>
+          <div class="color-preset" data-color="#4caf9a" style="background:#4caf9a" title="Teal"></div>
+          <div class="color-preset" data-color="#e8d44d" style="background:#e8d44d" title="Yellow"></div>
+          <div class="color-custom-wrap">
+            <label>Custom</label>
+            <input type="color" id="customColorPicker" value="#ff4d00">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── APP ────────────────────────────────────────────────────────────────── -->
+<div class="app-header">
+  <div class="app-title">FO<span>CU</span>S</div>
+  <div class="header-controls">
+    <button class="icon-btn" id="backupBtn">⬇ Backup</button>
+    <button class="icon-btn" id="restoreBtn">⬆ Restore</button>
+    <input type="file" id="restoreFile" accept=".json" style="display:none">
+    <button class="icon-btn" id="historyToggleBtn">◷ History</button>
+    <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-cell"><div class="stat-num" id="stat-sessions">0</div><div class="stat-label">Sessions</div></div>
+  <div class="stat-cell"><div class="stat-num" id="stat-minutes">0</div><div class="stat-label">Min Focused</div></div>
+  <div class="stat-cell"><div class="stat-num" id="stat-tasks">0</div><div class="stat-label">Tasks Done</div></div>
+</div>
+
+<div class="tabs-wrap">
+  <button class="tab-btn active" data-tab="activities">Activities</button>
+  <button class="tab-btn" data-tab="goals">Goals</button>
+</div>
+
+<!-- TAB: ACTIVITIES -->
+<div class="tab-panel active" id="tab-activities">
+  <div class="container">
+    <table id="taskTable">
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th class="center" style="width:88px">Time Left</th>
+          <th>Activity</th>
+          <th class="center" style="width:90px">Priority</th>
+          <th class="center" style="width:230px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <button class="add-btn" onclick="addNewRow()">+ Add Activity</button>
+  </div>
+
+  <div class="history-panel">
+    <div class="panel-header" id="historyHeader">
+      <span>Session History</span>
+      <div class="panel-header-btns">
+        <button class="panel-hdr-btn" onclick="event.stopPropagation();clearHistory()">Clear</button>
+        <span class="collapse-icon" id="historyCollapseIcon">▲</span>
+      </div>
+    </div>
+    <div class="panel-body" id="historyBody">
+      <div class="history-list" id="historyList">
+        <div class="history-empty" id="historyEmpty">No completed sessions yet.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: GOALS -->
+<div class="tab-panel" id="tab-goals">
+  <div class="goals-panel">
+    <div class="goal-form">
+      <div class="goal-form-field">
+        <label>Goal Name</label>
+        <input type="text" id="gf-name" placeholder="e.g. Deep Work">
+      </div>
+      <div class="goal-form-field">
+        <label>Tag to track</label>
+        <input type="text" id="gf-tag" placeholder="e.g. work">
+      </div>
+      <div class="goal-form-field">
+        <label>Target (minutes)</label>
+        <input type="number" id="gf-target" class="narrow" placeholder="300" min="1" step="1">
+      </div>
+      <button class="btn" onclick="addGoal()" style="align-self:flex-end;padding:6px 14px">+ Add Goal</button>
+    </div>
+    <div class="goal-info-bar">Time is tracked automatically from completed sessions whose tags match the goal tag.</div>
+    <div class="goals-list" id="goalsList">
+      <div class="goal-empty" id="goalsEmpty">No goals yet. Add one above.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let stats      = JSON.parse(localStorage.getItem('pomo_stats')   || '{"sessions":0,"minutes":0,"tasks":0}');
+let sessionLog = JSON.parse(localStorage.getItem('pomo_history') || '[]');
+let savedRows  = JSON.parse(localStorage.getItem('pomo_rows')    || '[]');
+let goals      = JSON.parse(localStorage.getItem('pomo_goals')   || '[]');
+
+// ── PROGRESS BAR COLOR ────────────────────────────────────────────────────────
+let progColor = localStorage.getItem('pomo_prog_color') || '#ff4d00';
+
+function applyProgColor(color) {
+  progColor = color;
+  document.documentElement.style.setProperty('--prog-color', color);
+  localStorage.setItem('pomo_prog_color', color);
+  // Update all existing progress bars
+  document.querySelectorAll('.progress-bar-bg').forEach(el => {
+    el.style.background = color;
+  });
+}
+applyProgColor(progColor);
+
+// ── SETTINGS MODAL ────────────────────────────────────────────────────────────
+const overlay     = document.getElementById('settingsOverlay');
+const settingsBtn = document.getElementById('settingsBtn');
+const closeBtn    = document.getElementById('settingsClose');
+
+settingsBtn.addEventListener('click', () => overlay.classList.add('open'));
+closeBtn.addEventListener('click',    () => overlay.classList.remove('open'));
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+
+// Theme swatches — sanitize stored theme (old versions used 'light'/'dark')
+const VALID_THEMES = ['brutalist','midnight','paper','forest','neon'];
+let storedTheme = localStorage.getItem('pomo_theme') || 'brutalist';
+if (!VALID_THEMES.includes(storedTheme)) storedTheme = 'brutalist';
+document.documentElement.setAttribute('data-theme', storedTheme);
+localStorage.setItem('pomo_theme', storedTheme);
+
+document.querySelectorAll('.theme-swatch').forEach(sw => {
+  sw.classList.toggle('active', sw.dataset.theme === storedTheme);
+  sw.addEventListener('click', () => {
+    const t = sw.dataset.theme;
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('pomo_theme', t);
+    document.querySelectorAll('.theme-swatch').forEach(s => s.classList.toggle('active', s.dataset.theme === t));
+  });
+});
+
+// Color presets
+const presets = document.querySelectorAll('.color-preset');
+const customPicker = document.getElementById('customColorPicker');
+
+function setActivePreset(color) {
+  presets.forEach(p => p.classList.toggle('active', p.dataset.color === color));
+  customPicker.value = color;
+}
+
+presets.forEach(p => {
+  p.addEventListener('click', () => {
+    applyProgColor(p.dataset.color);
+    setActivePreset(p.dataset.color);
+  });
+});
+
+customPicker.addEventListener('input', () => {
+  applyProgColor(customPicker.value);
+  presets.forEach(p => p.classList.remove('active'));
+});
+
+// Init
+setActivePreset(progColor);
+customPicker.value = progColor;
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function saveStats() {
+  localStorage.setItem('pomo_stats', JSON.stringify(stats));
+  document.getElementById('stat-sessions').textContent = stats.sessions;
+  document.getElementById('stat-minutes').textContent  = stats.minutes;
+  document.getElementById('stat-tasks').textContent    = stats.tasks;
+}
+
+// ── ROWS ──────────────────────────────────────────────────────────────────────
+function saveRows() {
+  const rows = [];
+  document.querySelectorAll('.task-row').forEach(row => {
+    rows.push({
+      name: row.querySelector('.activity-input').value,
+      priority: row.querySelector('.priority-select').value,
+      goalMinutes: parseFloat(row.dataset.goal) || 25,
+      tags: JSON.parse(row.dataset.tags || '[]')
+    });
+  });
+  localStorage.setItem('pomo_rows', JSON.stringify(rows));
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function addHistory(name, minutes, tags) {
+  const entry = { name: name||'Untitled', minutes, tags: tags||[], time: new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) };
+  sessionLog.unshift(entry);
+  if (sessionLog.length > 100) sessionLog.pop();
+  localStorage.setItem('pomo_history', JSON.stringify(sessionLog));
+  renderHistory();
+}
+
+function renderHistory() {
+  const list  = document.getElementById('historyList');
+  const empty = document.getElementById('historyEmpty');
+  list.querySelectorAll('.history-item').forEach(e => e.remove());
+  if (!sessionLog.length) { empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  sessionLog.forEach(h => {
+    const tagsHtml = (h.tags||[]).map(t=>`<span class="history-tag">${t}</span>`).join('');
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<div><div class="history-name">${h.name}</div>${tagsHtml?`<div class="history-tags">${tagsHtml}</div>`:''}<div class="history-meta">${h.time}</div></div><div class="history-duration">${h.minutes}m</div>`;
+    list.appendChild(item);
+  });
+}
+
+function clearHistory() {
+  sessionLog = [];
+  localStorage.setItem('pomo_history','[]');
+  renderHistory();
+}
+
+let historyCollapsed = localStorage.getItem('pomo_hist_collapsed') === 'true';
+function applyHistoryCollapse() {
+  document.getElementById('historyBody').classList.toggle('collapsed', historyCollapsed);
+  document.getElementById('historyCollapseIcon').textContent = historyCollapsed ? '▼' : '▲';
+}
+document.getElementById('historyHeader').addEventListener('click', () => {
+  historyCollapsed = !historyCollapsed;
+  localStorage.setItem('pomo_hist_collapsed', historyCollapsed);
+  applyHistoryCollapse();
+});
+
+// ── GOALS ─────────────────────────────────────────────────────────────────────
+function saveGoals() { localStorage.setItem('pomo_goals', JSON.stringify(goals)); }
+
+function addGoal() {
+  const name   = document.getElementById('gf-name').value.trim();
+  const tag    = document.getElementById('gf-tag').value.trim().toLowerCase();
+  const target = parseInt(document.getElementById('gf-target').value);
+  if (!name || !tag) { alert('Please enter a goal name and a tag.'); return; }
+  if (!target || target <= 0) { alert('Please enter a positive target in minutes.'); return; }
+  const current = computeGoalMinutes(tag);
+  goals.push({ id: Date.now(), name, tag, target, current });
+  saveGoals(); renderGoals();
+  ['gf-name','gf-tag','gf-target'].forEach(id => document.getElementById(id).value = '');
+}
+
+function computeGoalMinutes(tag) {
+  return sessionLog.filter(s => (s.tags||[]).includes(tag)).reduce((sum, s) => sum + (s.minutes||0), 0);
+}
+
+function refreshGoalsFromHistory() {
+  let changed = false;
+  goals.forEach(g => {
+    const fresh = computeGoalMinutes(g.tag);
+    if (fresh !== g.current) { g.current = fresh; changed = true; }
+  });
+  if (changed) { saveGoals(); renderGoals(); }
+}
+
+function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return;
+  goals = goals.filter(g => g.id !== id);
+  saveGoals(); renderGoals();
+}
+
+function fmtMins(m) {
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m/60), min = m%60;
+  return min ? `${h}h ${min}m` : `${h}h`;
+}
+
+function renderGoals() {
+  const list  = document.getElementById('goalsList');
+  const empty = document.getElementById('goalsEmpty');
+  list.querySelectorAll('.goal-item').forEach(e => e.remove());
+  if (!goals.length) { empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  goals.forEach(g => {
+    g.current = computeGoalMinutes(g.tag);
+    const pct      = Math.min(100, (g.current / g.target) * 100);
+    const complete = pct >= 100;
+    const sessions = sessionLog.filter(s=>(s.tags||[]).includes(g.tag));
+    const item = document.createElement('div');
+    item.className = 'goal-item';
+    item.innerHTML = `
+      <div class="goal-top">
+        <div class="goal-info">
+          <div class="goal-name">${g.name}${complete?' ✓':''}</div>
+          <div class="goal-tag-list"><span class="goal-tag">${g.tag}</span></div>
+        </div>
+        <div class="goal-right">
+          <div class="goal-nums">${fmtMins(g.current)} / ${fmtMins(g.target)}</div>
+          <div class="goal-unit">${sessions.length} session${sessions.length!==1?'s':''}</div>
+        </div>
+      </div>
+      <div class="goal-bar-wrap"><div class="goal-bar-fill${complete?' complete':''}" style="width:${pct}%"></div></div>
+      <div class="goal-bottom">
+        <span>${pct.toFixed(1)}% complete</span>
+        <div class="goal-actions">
+          <button class="btn danger goal-btn" onclick="deleteGoal(${g.id})">× Delete</button>
+        </div>
+      </div>`;
+    list.appendChild(item);
+  });
+}
+
+// ── CONFETTI ──────────────────────────────────────────────────────────────────
+function launchConfetti() {
+  const colors=['#ff4d00','#0047ff','#4caf50','#f5a623','#e91e63','#fff'];
+  for(let i=0;i<60;i++){
+    const p=document.createElement('div'); p.className='confetti-piece';
+    p.style.cssText=`left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};animation-delay:${Math.random()*0.5}s;animation-duration:${0.8+Math.random()*0.8}s;border-radius:${Math.random()>.5?'50%':'0'}`;
+    document.body.appendChild(p); setTimeout(()=>p.remove(),2000);
+  }
+}
+
+function playDone() {
+  try {
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    [523,659,784,1047].forEach((freq,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;o.type='sine';
+      g.gain.setValueAtTime(0.3,ctx.currentTime+i*.12);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*.12+.3);
+      o.start(ctx.currentTime+i*.12);o.stop(ctx.currentTime+i*.12+.3);
+    });
+  }catch(e){}
+}
+
+// ── ADD ROW ───────────────────────────────────────────────────────────────────
+function addNewRow(defaults={}) {
+  const tbody=document.getElementById('tableBody');
+  const row=document.createElement('tr');
+  row.className='task-row';
+  let timerId=null;
+  let goalMinutes=defaults.goalMinutes||25;
+  let totalSeconds=goalMinutes*60;
+  let secondsLeft=totalSeconds;
+  let rowTags=Array.isArray(defaults.tags)?[...defaults.tags]:[];
+  row.dataset.goal=goalMinutes;
+  row.dataset.tags=JSON.stringify(rowTags);
+
+  row.innerHTML=`
+    <td class="drag-handle">⠿</td>
+    <td class="time-cell">${fmt(totalSeconds)}</td>
+    <td class="activity-cell">
+      <div class="activity-stage">
+        <div class="activity-main">
+          <div class="progress-bar-bg" style="background:${progColor}"></div>
+          <div class="pct-text">0%</div>
+          <div class="name-display">
+            <div class="name-dark"><span class="name-placeholder">What are you working on?</span></div>
+            <div class="name-light"><span class="name-placeholder">What are you working on?</span></div>
+          </div>
+          <input type="text" class="activity-input" value="${defaults.name||''}">
+        </div>
+        <div class="tags-row">
+          <div class="tags-chips"></div>
+          <input type="text" class="tag-input" placeholder="Add tag + Enter">
+        </div>
+      </div>
+    </td>
+    <td class="priority-cell">
+      <select class="priority-select ${defaults.priority||'med'}">
+        <option value="high" ${defaults.priority==='high'?'selected':''}>▲ High</option>
+        <option value="med"  ${(!defaults.priority||defaults.priority==='med')?'selected':''}>● Med</option>
+        <option value="low"  ${defaults.priority==='low'?'selected':''}>▼ Low</option>
+      </select>
+    </td>
+    <td class="actions-cell">
+      <div class="actions">
+        <button class="btn min-btn" onclick="adjustTime(this,-1)">−1m</button>
+        <button class="btn start">START</button>
+        <button class="btn min-btn" onclick="adjustTime(this,1)">+1m</button>
+        <button class="btn" onclick="toggleSettings(this)">⚙</button>
+        <button class="btn" onclick="resetRow(this)">↺</button>
+        <button class="btn danger" onclick="removeRow(this)">×</button>
+      </div>
+      <div class="btn-settings-row">
+        <label>Goal (min)</label>
+        <input type="number" class="settings-input goal-input" value="${goalMinutes}" min="1" max="240">
+      </div>
+    </td>`;
+
+  const timeDisp     = row.querySelector('.time-cell');
+  const progBg       = row.querySelector('.progress-bar-bg');
+  const pctText      = row.querySelector('.pct-text');
+  const startBtn     = row.querySelector('.btn.start');
+  const goalInp      = row.querySelector('.goal-input');
+  const prioSel      = row.querySelector('.priority-select');
+  const actInput     = row.querySelector('.activity-input');
+  const nameDarkSpan = row.querySelector('.name-dark span');
+  const nameLightSpan= row.querySelector('.name-light span');
+  const nameLightDiv = row.querySelector('.name-light');
+  const tagsChips    = row.querySelector('.tags-chips');
+  const tagInput     = row.querySelector('.tag-input');
+  const PLACEHOLDER  = 'What are you working on?';
+
+  const renderTags = () => {
+    tagsChips.innerHTML='';
+    rowTags.forEach((t,i)=>{
+      const chip=document.createElement('span');
+      chip.className='tag-chip';
+      chip.innerHTML=`${t}<span class="tag-remove" data-i="${i}">×</span>`;
+      chip.querySelector('.tag-remove').onclick=()=>{ rowTags.splice(i,1); row.dataset.tags=JSON.stringify(rowTags); renderTags(); saveRows(); };
+      tagsChips.appendChild(chip);
+    });
+  };
+  renderTags();
+
+  tagInput.addEventListener('keydown', e=>{
+    if(e.key==='Enter'||e.key===','){
+      e.preventDefault();
+      const val=tagInput.value.trim().toLowerCase().replace(',','');
+      if(val&&!rowTags.includes(val)){ rowTags.push(val); row.dataset.tags=JSON.stringify(rowTags); renderTags(); saveRows(); }
+      tagInput.value='';
+    }
+    if(e.key==='Backspace'&&!tagInput.value&&rowTags.length){ rowTags.pop(); row.dataset.tags=JSON.stringify(rowTags); renderTags(); saveRows(); }
+  });
+
+  const syncName=()=>{
+    const val=actInput.value||PLACEHOLDER, ph=!actInput.value;
+    nameDarkSpan.textContent=val; nameLightSpan.textContent=val;
+    nameDarkSpan.className=ph?'name-placeholder':'';
+    nameLightSpan.className=ph?'name-placeholder':'';
+  };
+  syncName();
+
+  const updateUI=()=>{
+    timeDisp.textContent=fmt(secondsLeft);
+    timeDisp.classList.toggle('urgent',secondsLeft<=60&&secondsLeft>0);
+    const pct=Math.floor(((totalSeconds-secondsLeft)/totalSeconds)*100);
+    progBg.style.width=pct+'%';
+    progBg.style.background=progColor;
+    pctText.textContent=pct+'%';
+    nameLightDiv.style.clipPath=`inset(0 ${100-pct}% 0 0)`;
+  };
+
+  prioSel.onchange=()=>{ prioSel.className='priority-select '+prioSel.value; saveRows(); };
+  actInput.oninput=()=>{ syncName(); saveRows(); };
+
+  goalInp.oninput=()=>{
+    if(timerId){clearInterval(timerId);timerId=null;}
+    goalMinutes=parseFloat(goalInp.value)||1; row.dataset.goal=goalMinutes;
+    totalSeconds=goalMinutes*60; secondsLeft=totalSeconds;
+    startBtn.textContent='START'; startBtn.className='btn start';
+    row.classList.remove('done','flash'); updateUI(); saveRows();
+  };
+
+  startBtn.onclick=()=>{
+    if(timerId){ clearInterval(timerId);timerId=null; startBtn.textContent='RESUME'; startBtn.className='btn'; }
+    else {
+      if(secondsLeft===0)return;
+      startBtn.textContent='PAUSE'; startBtn.className='btn start';
+      timerId=setInterval(()=>{
+        if(secondsLeft>0){ secondsLeft--; updateUI(); }
+        else {
+          clearInterval(timerId);timerId=null;
+          startBtn.textContent='DONE ✓'; startBtn.className='btn';
+          progBg.style.width='100%'; pctText.textContent='100%';
+          nameLightDiv.style.clipPath='inset(0 0% 0 0)';
+          row.classList.add('done');
+          setTimeout(()=>{ row.classList.add('flash'); setTimeout(()=>row.classList.remove('flash'),1000); },50);
+          launchConfetti(); playDone();
+          stats.sessions++; stats.minutes+=goalMinutes; stats.tasks++;
+          saveStats(); addHistory(actInput.value, goalMinutes, rowTags); refreshGoalsFromHistory();
+        }
+      },1000);
+    }
+  };
+
+  row.addEventListener('adjustTime',e=>{
+    const delta=e.detail*60;
+    secondsLeft=Math.max(1,secondsLeft+delta); totalSeconds=Math.max(1,totalSeconds+delta);
+    goalMinutes=totalSeconds/60; row.dataset.goal=goalMinutes; goalInp.value=goalMinutes;
+    if(row.classList.contains('done')&&delta>0){ row.classList.remove('done'); startBtn.textContent='START'; startBtn.className='btn start'; }
+    updateUI(); saveRows();
+  });
+
+  tbody.appendChild(row); updateUI();
+}
+
+function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+
+// Expose to window so inline onclick attributes can reach them inside DOMContentLoaded
+window.toggleSettings = btn => btn.closest('tr').querySelector('.btn-settings-row').classList.toggle('active');
+window.resetRow       = btn => btn.closest('tr').querySelector('.goal-input').dispatchEvent(new Event('input'));
+window.adjustTime     = (btn,d) => btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d}));
+window.removeRow      = btn => { btn.closest('tr').remove(); saveRows(); };
+window.addNewRow      = addNewRow;
+window.addGoal        = addGoal;
+window.deleteGoal     = deleteGoal;
+window.clearHistory   = clearHistory;
+
+// ── TABS ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── HISTORY TOGGLE ────────────────────────────────────────────────────────────
+(function(){
+  const btn   = document.getElementById('historyToggleBtn');
+  const panel = document.querySelector('.history-panel');
+  let hidden  = localStorage.getItem('pomo_hist_hidden') === '1';
+  const apply = () => {
+    panel.classList.toggle('hidden', hidden);
+    btn.classList.toggle('active', !hidden);
+  };
+  apply();
+  btn.addEventListener('click', () => {
+    hidden = !hidden;
+    localStorage.setItem('pomo_hist_hidden', hidden ? '1' : '0');
+    apply();
+  });
+})();
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+(function(){
+  let ghost=null, placeholder=null, dragRow=null, offsetX=0, offsetY=0;
+  function getRows(){ return [...document.querySelectorAll('#tableBody .task-row')]; }
+  function createPlaceholder(){
+    const ph=document.createElement('tr'); ph.className='drag-placeholder';
+    const td=document.createElement('td');
+    const colCount=document.querySelectorAll('#taskTable thead th').length;
+    td.colSpan=colCount; ph.appendChild(td); return ph;
+  }
+  document.getElementById('tableBody').addEventListener('pointerdown', e=>{
+    const handle=e.target.closest('.drag-handle'); if(!handle) return;
+    e.preventDefault(); e.stopPropagation();
+    dragRow=handle.closest('.task-row');
+    const tbody=document.getElementById('tableBody');
+    const rect=dragRow.getBoundingClientRect();
+    offsetX=e.clientX - rect.left; offsetY=e.clientY - rect.top;
+    const ghostTable=document.createElement('table'); ghostTable.className='drag-ghost'; ghostTable.style.width=rect.width+'px';
+    const ghostTbody=document.createElement('tbody');
+    const cloned=dragRow.cloneNode(true);
+    cloned.querySelectorAll('input,select,button').forEach(el=>el.setAttribute('tabindex','-1'));
+    ghostTbody.appendChild(cloned); ghostTable.appendChild(ghostTbody); document.body.appendChild(ghostTable); ghost=ghostTable;
+    ghost.style.left=(rect.left)+'px'; ghost.style.top=(rect.top)+'px';
+    placeholder=createPlaceholder(); tbody.insertBefore(placeholder, dragRow); dragRow.classList.add('is-dragging');
+    document.addEventListener('pointermove', onMove, {passive:false}); document.addEventListener('pointerup', onUp); document.addEventListener('pointercancel', onUp);
+  });
+  function onMove(e){
+    if(!ghost||!dragRow) return; e.preventDefault();
+    ghost.style.left=(e.clientX - offsetX)+'px'; ghost.style.top=(e.clientY - offsetY)+'px';
+    const y=e.clientY; const rows=getRows().filter(r=>r!==dragRow&&r!==placeholder);
+    const tbody=document.getElementById('tableBody'); let inserted=false;
+    for(const r of rows){ const rect=r.getBoundingClientRect(); if(y < rect.top + rect.height/2){ tbody.insertBefore(placeholder, r); inserted=true; break; } }
+    if(!inserted) tbody.appendChild(placeholder);
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove); document.removeEventListener('pointerup', onUp); document.removeEventListener('pointercancel', onUp);
+    if(!dragRow) return; placeholder.replaceWith(dragRow); dragRow.classList.remove('is-dragging');
+    ghost.remove(); ghost=null; placeholder=null; dragRow=null; saveRows();
+  }
+})();
+
+// ── BACKUP / RESTORE ─────────────────────────────────────────────────────────
+document.getElementById('backupBtn').onclick=()=>{
+  const data={ pomo_stats:stats, pomo_history:sessionLog, pomo_rows:JSON.parse(localStorage.getItem('pomo_rows')||'[]'), pomo_goals:goals, pomo_theme:localStorage.getItem('pomo_theme')||'brutalist', pomo_prog_color:progColor, exported:new Date().toISOString() };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`focus-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
+};
+document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click();
+document.getElementById('restoreFile').onchange=e=>{
+  const file=e.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(data.pomo_stats)  { stats=data.pomo_stats;       localStorage.setItem('pomo_stats',JSON.stringify(stats)); }
+      if(data.pomo_history){ sessionLog=data.pomo_history; localStorage.setItem('pomo_history',JSON.stringify(sessionLog)); }
+      if(data.pomo_rows)   { savedRows=data.pomo_rows;     localStorage.setItem('pomo_rows',JSON.stringify(savedRows)); }
+      if(data.pomo_goals)  { goals=data.pomo_goals;        localStorage.setItem('pomo_goals',JSON.stringify(goals)); }
+      if(data.pomo_theme)  { localStorage.setItem('pomo_theme',data.pomo_theme); document.documentElement.setAttribute('data-theme',data.pomo_theme); }
+      if(data.pomo_prog_color){ applyProgColor(data.pomo_prog_color); setActivePreset(data.pomo_prog_color); }
+      saveStats(); renderHistory(); renderGoals();
+      document.getElementById('tableBody').innerHTML='';
+      savedRows.forEach(r=>addNewRow(r));
+      alert('Backup restored!');
+    }catch(err){ alert('Invalid backup file.'); }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+saveStats(); renderHistory(); renderGoals(); applyHistoryCollapse();
+if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
+else addNewRow();
+
+}); // end DOMContentLoaded
+</script>
+</body>
+</html>
