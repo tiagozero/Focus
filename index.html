@@ -395,6 +395,208 @@
   .goal-empty { padding: 28px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
   .goal-info-bar { padding: 8px 16px; font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px dashed var(--border); font-style: italic; }
 
+  /* ── DAY NAME BAR ────────────────────────────────────────────────────────────── */
+  .day-name-bar {
+    max-width: 900px; margin: 0 auto 16px;
+    display: flex; align-items: center; gap: 10px;
+    border: 2px solid var(--border); background: var(--surface); box-shadow: var(--shadow);
+    padding: 10px 16px;
+  }
+  .day-name-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); white-space: nowrap; }
+  .day-name-input {
+    flex: 1; border: none; background: transparent; color: var(--text);
+    font-family: var(--font-title); font-size: 1.2rem; letter-spacing: 2px;
+    outline: none; text-transform: uppercase;
+  }
+  .day-name-input::placeholder { color: var(--text-muted); opacity: 0.4; }
+
+  /* ── SEARCH BAR ─────────────────────────────────────────────────────────────── */
+  .search-bar-wrap {
+    max-width: 900px; margin: 0 auto 12px;
+    display: flex; align-items: center; gap: 0;
+    border: 2px solid var(--border); background: var(--surface); box-shadow: var(--shadow);
+  }
+  .search-icon { padding: 0 12px; color: var(--text-muted); font-size: 0.9rem; pointer-events: none; }
+  .search-input {
+    flex: 1; border: none; background: transparent; color: var(--text);
+    font-family: var(--font-body); font-size: 0.8rem; padding: 10px 0;
+    outline: none; letter-spacing: 1px;
+  }
+  .search-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .search-clear {
+    border: none; background: none; color: var(--text-muted); cursor: pointer;
+    padding: 0 12px; font-size: 1rem; display: none;
+  }
+  .search-clear:hover { color: var(--accent); }
+  .search-clear.visible { display: block; }
+  .task-row.search-hidden { display: none !important; }
+
+  /* ── FINISH DAY MODAL ───────────────────────────────────────────────────────── */
+  .finish-overlay {
+    position: fixed; inset: 0; z-index: 10001;
+    background: rgba(0,0,0,0.65);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(3px);
+  }
+  .finish-overlay.open { opacity: 1; pointer-events: all; }
+  .finish-modal {
+    background: var(--surface); border: 2px solid var(--border);
+    box-shadow: var(--shadow); width: 520px; max-width: 95vw;
+    max-height: 90vh; overflow-y: auto;
+    animation: slideUp 0.22s ease;
+  }
+  .finish-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 2px solid var(--border);
+    background: var(--header-bg); color: var(--header-text);
+  }
+  .finish-header h2 { font-family: var(--font-title); font-size: 1.4rem; letter-spacing: 3px; text-transform: uppercase; }
+  .finish-close { background: none; border: none; cursor: pointer; color: var(--header-text); font-size: 1.4rem; line-height: 1; opacity: 0.7; }
+  .finish-close:hover { opacity: 1; }
+  .finish-body { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  .finish-day-title { font-family: var(--font-title); font-size: 1.5rem; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+  .finish-summary {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    border: 2px solid var(--border); background: var(--surface2);
+  }
+  .finish-stat { padding: 12px; text-align: center; border-right: 1px solid var(--border); }
+  .finish-stat:last-child { border-right: none; }
+  .finish-stat-num { font-family: var(--font-title); font-size: 1.8rem; color: var(--accent); }
+  .finish-stat-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-top: 2px; }
+  .finish-lessons-title { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); font-weight: 700; }
+  .finish-lessons-list { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+  .finish-lesson-item {
+    display: flex; align-items: center; justify-content: space-between;
+    border: 1px solid var(--border); padding: 8px 12px; background: var(--surface2);
+    font-size: 0.78rem;
+  }
+  .finish-lesson-name { flex: 1; font-weight: 600; }
+  .finish-lesson-time { font-family: var(--font-title); color: var(--accent); font-size: 1rem; margin-left: 12px; white-space: nowrap; }
+  .finish-lesson-done { color: var(--tag-low); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; margin-left: 8px; }
+  .finish-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .finish-btn {
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 8px 18px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s;
+  }
+  .finish-btn:hover { background: var(--border); color: var(--bg); }
+  .finish-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .finish-btn.primary:hover { opacity: 0.85; }
+  .finish-empty { color: var(--text-muted); font-size: 0.75rem; padding: 12px; text-align: center; }
+
+  /* ── TEMPLATES ──────────────────────────────────────────────────────────────── */
+  .templates-panel { max-width: 900px; margin: 0 auto; border: 2px solid var(--border); box-shadow: var(--shadow); background: var(--surface); }
+
+  /* Save-as-template bar at top of panel */
+  .template-save-bar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+    padding: 14px 16px; border-bottom: 2px solid var(--border);
+    background: var(--surface2);
+  }
+  .template-save-label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); white-space: nowrap; }
+  .template-name-input {
+    flex: 1; min-width: 160px; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text); font-family: var(--font-body); font-size: 0.8rem;
+    padding: 6px 10px; outline: none;
+  }
+  .template-name-input::placeholder { color: var(--text-muted); opacity: 0.5; }
+  .template-save-btn {
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 6px 14px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; white-space: nowrap;
+  }
+  .template-save-btn:hover { background: var(--border); color: var(--bg); }
+  .template-save-btn.accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .template-save-btn.accent:hover { opacity: 0.85; }
+
+  /* Template list */
+  .templates-list { display: flex; flex-direction: column; }
+  .template-item {
+    border-bottom: 1px solid var(--border);
+    background: var(--row-bg);
+    transition: background 0.15s;
+  }
+  .template-item:last-child { border-bottom: none; }
+  .template-item-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+  }
+  .template-item-header:hover { background: var(--surface2); }
+  .template-expand-icon { color: var(--text-muted); font-size: 0.7rem; transition: transform 0.2s; flex-shrink: 0; }
+  .template-item.expanded .template-expand-icon { transform: rotate(90deg); }
+  .template-item-name { font-family: var(--font-title); font-size: 1rem; letter-spacing: 2px; text-transform: uppercase; flex: 1; }
+  .template-item-meta { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .template-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .template-action-btn {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 4px 10px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; white-space: nowrap;
+  }
+  .template-action-btn:hover { background: var(--border); color: var(--bg); }
+  .template-action-btn.load { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .template-action-btn.load:hover { opacity: 0.85; }
+  .template-action-btn.danger { color: var(--tag-high); border-color: var(--tag-high); }
+  .template-action-btn.danger:hover { background: var(--tag-high); color: #fff; }
+
+  /* Expanded rows preview */
+  .template-rows-preview {
+    display: none; flex-direction: column; gap: 0;
+    border-top: 1px dashed var(--border); background: var(--surface2);
+    max-height: 320px; overflow-y: auto;
+  }
+  .template-item.expanded .template-rows-preview { display: flex; }
+  .template-row-preview {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 16px 7px 32px; border-bottom: 1px solid var(--border); font-size: 0.75rem;
+  }
+  .template-row-preview:last-child { border-bottom: none; }
+  .trp-name { flex: 1; font-weight: 600; }
+  .trp-time { font-family: var(--font-title); color: var(--accent); font-size: 0.9rem; width: 38px; text-align: right; }
+  .trp-prio { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; padding: 1px 6px; border: 1px solid var(--border); }
+  .trp-prio.high { color: var(--tag-high); border-color: var(--tag-high); }
+  .trp-prio.med  { color: var(--tag-med);  border-color: var(--tag-med);  }
+  .trp-prio.low  { color: var(--tag-low);  border-color: var(--tag-low);  }
+  .trp-tags { display: flex; gap: 3px; flex-wrap: wrap; }
+  .trp-tag  { font-size: 0.52rem; padding: 1px 5px; border: 1px solid var(--border); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Load-mode confirmation bar */
+  .template-load-confirm {
+    display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 16px; background: var(--surface2); border-top: 1px dashed var(--border);
+    font-size: 0.65rem; color: var(--text-muted);
+  }
+  .template-load-confirm.visible { display: flex; }
+  .template-load-confirm strong { color: var(--text); }
+  .tlc-btn {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 4px 10px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s;
+  }
+  .tlc-btn:hover { background: var(--border); color: var(--bg); }
+  .tlc-btn.replace { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tlc-btn.replace:hover { opacity: 0.85; }
+  .tlc-btn.append  { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .tlc-btn.append:hover  { opacity: 0.85; }
+
+  .templates-empty { padding: 28px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
+
+  /* ── SAVED DAYS PANEL ───────────────────────────────────────────────────────── */
+  .saved-days-panel { max-width: 900px; margin: 16px auto 0; border: 2px solid var(--border); box-shadow: var(--shadow); background: var(--surface); }
+  .saved-day-item { border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .saved-day-item:last-child { border-bottom: none; }
+  .saved-day-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+  .saved-day-name { font-family: var(--font-title); font-size: 1rem; letter-spacing: 2px; text-transform: uppercase; }
+  .saved-day-meta { font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .saved-day-stats { display: flex; gap: 12px; margin-bottom: 8px; }
+  .saved-day-stat { font-size: 0.65rem; color: var(--text-muted); }
+  .saved-day-stat span { font-family: var(--font-title); color: var(--accent); font-size: 1rem; margin-right: 3px; }
+  .saved-day-lessons { display: flex; flex-wrap: wrap; gap: 4px; }
+  .saved-day-lesson { font-size: 0.58rem; padding: 2px 7px; border: 1px solid var(--border); background: var(--surface2); text-transform: uppercase; letter-spacing: 1px; }
+  .saved-day-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .saved-days-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
+
   /* ── MISC ────────────────────────────────────────────────────────────────────── */
   .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; animation: confettiFall 1.2s ease-in forwards; pointer-events: none; z-index: 9999; }
   @keyframes confettiFall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
@@ -565,16 +767,47 @@
   </div>
 </div>
 
+<!-- ── FINISH DAY MODAL ──────────────────────────────────────────────────── -->
+<div class="finish-overlay" id="finishOverlay">
+  <div class="finish-modal">
+    <div class="finish-header">
+      <h2>🏁 Day Complete</h2>
+      <button class="finish-close" id="finishClose">✕</button>
+    </div>
+    <div class="finish-body">
+      <div class="finish-day-title" id="finishDayTitle">Today</div>
+      <div class="finish-summary">
+        <div class="finish-stat"><div class="finish-stat-num" id="fd-total-time">0m</div><div class="finish-stat-label">Total Time</div></div>
+        <div class="finish-stat"><div class="finish-stat-num" id="fd-lessons">0</div><div class="finish-stat-label">Lessons</div></div>
+        <div class="finish-stat"><div class="finish-stat-num" id="fd-done">0</div><div class="finish-stat-label">Completed</div></div>
+      </div>
+      <div class="finish-lessons-title">Lesson Log</div>
+      <div class="finish-lessons-list" id="finishLessonsList"></div>
+      <div class="finish-actions">
+        <button class="finish-btn" id="finishCancelBtn">Cancel</button>
+        <button class="finish-btn" id="finishBackupBtn">⬇ Export Backup</button>
+        <button class="finish-btn primary" id="finishSaveBtn">✓ Save Day</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ── APP ────────────────────────────────────────────────────────────────── -->
 <div class="app-header">
   <div class="app-title">FO<span>CU</span>S</div>
   <div class="header-controls">
+    <button class="icon-btn" id="finishDayBtn" style="background:var(--accent);border-color:var(--accent);color:#fff;">🏁 Finish Day</button>
     <button class="icon-btn" id="backupBtn">⬇ Backup</button>
     <button class="icon-btn" id="restoreBtn">⬆ Restore</button>
     <input type="file" id="restoreFile" accept=".json" style="display:none">
     <button class="icon-btn" id="historyToggleBtn">◷ History</button>
     <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
   </div>
+</div>
+
+<div class="day-name-bar">
+  <span class="day-name-label">Day Name</span>
+  <input type="text" class="day-name-input" id="dayNameInput" placeholder="e.g. Monday — Deep Work Sprint">
 </div>
 
 <div class="stats-bar">
@@ -586,6 +819,15 @@
 <div class="tabs-wrap">
   <button class="tab-btn active" data-tab="activities">Activities</button>
   <button class="tab-btn" data-tab="goals">Goals</button>
+  <button class="tab-btn" data-tab="templates">Templates</button>
+  <button class="tab-btn" data-tab="saved-days">Saved Days</button>
+</div>
+
+<!-- SEARCH BAR (only visible on activities tab) -->
+<div class="search-bar-wrap" id="searchBarWrap">
+  <span class="search-icon">🔍</span>
+  <input type="text" class="search-input" id="searchInput" placeholder="Search activities...">
+  <button class="search-clear" id="searchClear">✕</button>
 </div>
 
 <!-- TAB: ACTIVITIES -->
@@ -647,6 +889,47 @@
   </div>
 </div>
 
+<!-- TAB: TEMPLATES -->
+<div class="tab-panel" id="tab-templates">
+  <div class="templates-panel">
+
+    <!-- Save current board as template -->
+    <div class="template-save-bar">
+      <span class="template-save-label">Save current board as template</span>
+      <input type="text" class="template-name-input" id="templateNameInput" placeholder="Template name…">
+      <button class="template-save-btn accent" id="templateSaveBtn">+ Save Template</button>
+    </div>
+
+    <!-- Load confirm bar (hidden until user clicks Load) -->
+    <div class="template-load-confirm" id="templateLoadConfirm">
+      <span>Load <strong id="tlcName"></strong> into Activities?</span>
+      <button class="tlc-btn replace" id="tlcReplace">↺ Replace all</button>
+      <button class="tlc-btn append"  id="tlcAppend">+ Append</button>
+      <button class="tlc-btn" id="tlcCancel">Cancel</button>
+    </div>
+
+    <!-- Templates list -->
+    <div class="templates-list" id="templatesList">
+      <div class="templates-empty" id="templatesEmpty">No templates yet. Set up activities and save a template above.</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: SAVED DAYS -->
+<div class="tab-panel" id="tab-saved-days">
+  <div class="saved-days-panel">
+    <div class="panel-header">
+      <span>Saved Days</span>
+      <div class="panel-header-btns">
+        <button class="panel-hdr-btn" id="clearSavedDaysBtn">Clear All</button>
+      </div>
+    </div>
+    <div id="savedDaysList">
+      <div class="saved-days-empty" id="savedDaysEmpty">No saved days yet. Finish a day to save it here.</div>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -654,6 +937,8 @@ let stats      = JSON.parse(localStorage.getItem('pomo_stats')   || '{"sessions"
 let sessionLog = JSON.parse(localStorage.getItem('pomo_history') || '[]');
 let savedRows  = JSON.parse(localStorage.getItem('pomo_rows')    || '[]');
 let goals      = JSON.parse(localStorage.getItem('pomo_goals')   || '[]');
+let savedDays  = JSON.parse(localStorage.getItem('pomo_saved_days') || '[]');
+let templates  = JSON.parse(localStorage.getItem('pomo_templates')  || '[]');
 
 // ── PROGRESS BAR COLOR ────────────────────────────────────────────────────────
 let progColor = localStorage.getItem('pomo_prog_color') || '#ff4d00';
@@ -668,6 +953,35 @@ function applyProgColor(color) {
   });
 }
 applyProgColor(progColor);
+
+// ── DAY NAME ─────────────────────────────────────────────────────────────────
+const dayNameInput = document.getElementById('dayNameInput');
+dayNameInput.value = localStorage.getItem('pomo_day_name') || '';
+dayNameInput.addEventListener('input', () => {
+  localStorage.setItem('pomo_day_name', dayNameInput.value);
+});
+
+// ── SEARCH BAR ────────────────────────────────────────────────────────────────
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const searchBarWrap = document.getElementById('searchBarWrap');
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim().toLowerCase();
+  searchClear.classList.toggle('visible', q.length > 0);
+  document.querySelectorAll('.task-row').forEach(row => {
+    const name = (row.querySelector('.activity-input').value || '').toLowerCase();
+    const tags = JSON.parse(row.dataset.tags || '[]').join(' ').toLowerCase();
+    row.classList.toggle('search-hidden', q.length > 0 && !name.includes(q) && !tags.includes(q));
+  });
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.classList.remove('visible');
+  document.querySelectorAll('.task-row').forEach(row => row.classList.remove('search-hidden'));
+  searchInput.focus();
+});
 
 // ── SETTINGS MODAL ────────────────────────────────────────────────────────────
 const overlay     = document.getElementById('settingsOverlay');
@@ -1054,7 +1368,8 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
-  });
+    // Show search bar only on activities tab
+    searchBarWrap.style.display = btn.dataset.tab === 'activities' ? '' : 'none';  });
 });
 
 // ── HISTORY TOGGLE ────────────────────────────────────────────────────────────
@@ -1117,7 +1432,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 
 // ── BACKUP / RESTORE ─────────────────────────────────────────────────────────
 document.getElementById('backupBtn').onclick=()=>{
-  const data={ pomo_stats:stats, pomo_history:sessionLog, pomo_rows:JSON.parse(localStorage.getItem('pomo_rows')||'[]'), pomo_goals:goals, pomo_theme:localStorage.getItem('pomo_theme')||'brutalist', pomo_prog_color:progColor, exported:new Date().toISOString() };
+  const data={ pomo_stats:stats, pomo_history:sessionLog, pomo_rows:JSON.parse(localStorage.getItem('pomo_rows')||'[]'), pomo_goals:goals, pomo_theme:localStorage.getItem('pomo_theme')||'brutalist', pomo_prog_color:progColor, pomo_day_name:dayNameInput.value, pomo_saved_days:savedDays, pomo_templates:templates, exported:new Date().toISOString() };
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
   a.download=`focus-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
@@ -1135,7 +1450,10 @@ document.getElementById('restoreFile').onchange=e=>{
       if(data.pomo_goals)  { goals=data.pomo_goals;        localStorage.setItem('pomo_goals',JSON.stringify(goals)); }
       if(data.pomo_theme)  { localStorage.setItem('pomo_theme',data.pomo_theme); document.documentElement.setAttribute('data-theme',data.pomo_theme); }
       if(data.pomo_prog_color){ applyProgColor(data.pomo_prog_color); setActivePreset(data.pomo_prog_color); }
-      saveStats(); renderHistory(); renderGoals();
+      if(data.pomo_day_name){ dayNameInput.value=data.pomo_day_name; localStorage.setItem('pomo_day_name',data.pomo_day_name); }
+      if(data.pomo_saved_days){ savedDays=data.pomo_saved_days; saveSavedDays(); }
+      if(data.pomo_templates) { templates=data.pomo_templates;  saveTemplates(); }
+      saveStats(); renderHistory(); renderGoals(); renderSavedDays(); renderTemplates();
       document.getElementById('tableBody').innerHTML='';
       savedRows.forEach(r=>addNewRow(r));
       alert('Backup restored!');
@@ -1145,8 +1463,303 @@ document.getElementById('restoreFile').onchange=e=>{
   reader.readAsText(file);
 };
 
+// ── TEMPLATES ─────────────────────────────────────────────────────────────────
+function saveTemplates() { localStorage.setItem('pomo_templates', JSON.stringify(templates)); }
+
+function getCurrentRows() {
+  const rows = [];
+  document.querySelectorAll('.task-row').forEach(row => {
+    rows.push({
+      name: row.querySelector('.activity-input').value || '',
+      priority: row.querySelector('.priority-select').value || 'med',
+      goalMinutes: parseFloat(row.dataset.goal) || 25,
+      tags: JSON.parse(row.dataset.tags || '[]')
+    });
+  });
+  return rows;
+}
+
+let pendingLoadTemplateId = null;
+
+function renderTemplates() {
+  const list  = document.getElementById('templatesList');
+  const empty = document.getElementById('templatesEmpty');
+  list.querySelectorAll('.template-item').forEach(e => e.remove());
+  if (!templates.length) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  templates.forEach((tpl, idx) => {
+    const item = document.createElement('div');
+    item.className = 'template-item';
+    item.dataset.id = tpl.id;
+
+    const rowsPreviewHtml = (tpl.rows || []).map(r => {
+      const tagsHtml = (r.tags||[]).map(t=>`<span class="trp-tag">${t}</span>`).join('');
+      return `<div class="template-row-preview">
+        <span class="trp-name">${r.name || '<em style="opacity:.4">Untitled</em>'}</span>
+        <span class="trp-time">${r.goalMinutes}m</span>
+        <span class="trp-prio ${r.priority||'med'}">${r.priority||'med'}</span>
+        ${tagsHtml ? `<span class="trp-tags">${tagsHtml}</span>` : ''}
+      </div>`;
+    }).join('');
+
+    item.innerHTML = `
+      <div class="template-item-header">
+        <span class="template-expand-icon">▶</span>
+        <span class="template-item-name">${tpl.name}</span>
+        <span class="template-item-meta">${tpl.rows.length} activit${tpl.rows.length===1?'y':'ies'} · ${tpl.created}</span>
+        <div class="template-item-actions">
+          <button class="template-action-btn load" data-load="${tpl.id}">⬆ Load</button>
+          <button class="template-action-btn" data-dupe="${tpl.id}">⧉ Dupe</button>
+          <button class="template-action-btn danger" data-del="${tpl.id}">× Del</button>
+        </div>
+      </div>
+      <div class="template-rows-preview">${rowsPreviewHtml || '<div style="padding:12px 32px;font-size:0.7rem;color:var(--text-muted)">No activities in this template.</div>'}</div>`;
+
+    // Expand/collapse
+    item.querySelector('.template-item-header').addEventListener('click', e => {
+      if (e.target.closest('.template-item-actions')) return;
+      item.classList.toggle('expanded');
+    });
+
+    // Load button
+    item.querySelector('[data-load]').addEventListener('click', e => {
+      e.stopPropagation();
+      pendingLoadTemplateId = tpl.id;
+      document.getElementById('tlcName').textContent = tpl.name;
+      document.getElementById('templateLoadConfirm').classList.add('visible');
+      // Scroll to confirm bar
+      document.getElementById('templateLoadConfirm').scrollIntoView({behavior:'smooth', block:'nearest'});
+    });
+
+    // Duplicate button
+    item.querySelector('[data-dupe]').addEventListener('click', e => {
+      e.stopPropagation();
+      const original = templates.find(t => t.id === tpl.id);
+      if (!original) return;
+      const clone = JSON.parse(JSON.stringify(original));
+      clone.id = Date.now();
+      clone.name = original.name + ' (copy)';
+      clone.created = new Date().toLocaleDateString([], {month:'short', day:'numeric'});
+      templates.push(clone);
+      saveTemplates(); renderTemplates();
+    });
+
+    // Delete button
+    item.querySelector('[data-del]').addEventListener('click', e => {
+      e.stopPropagation();
+      if (!confirm(`Delete template "${tpl.name}"?`)) return;
+      templates = templates.filter(t => t.id !== tpl.id);
+      saveTemplates(); renderTemplates();
+    });
+
+    list.appendChild(item);
+  });
+}
+
+// Save current board as template
+document.getElementById('templateSaveBtn').addEventListener('click', () => {
+  const name = document.getElementById('templateNameInput').value.trim();
+  if (!name) { document.getElementById('templateNameInput').focus(); return; }
+  const rows = getCurrentRows();
+  const tpl = {
+    id: Date.now(),
+    name,
+    rows,
+    created: new Date().toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'})
+  };
+  templates.push(tpl);
+  saveTemplates(); renderTemplates();
+  document.getElementById('templateNameInput').value = '';
+  // Brief visual feedback
+  const btn = document.getElementById('templateSaveBtn');
+  btn.textContent = '✓ Saved!';
+  setTimeout(() => { btn.textContent = '+ Save Template'; }, 1400);
+});
+
+// Allow Enter key in name field
+document.getElementById('templateNameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('templateSaveBtn').click();
+});
+
+// Load confirm bar
+function applyTemplateLoad(mode) {
+  const tpl = templates.find(t => t.id === pendingLoadTemplateId);
+  if (!tpl) return;
+  if (mode === 'replace') {
+    document.getElementById('tableBody').innerHTML = '';
+  }
+  tpl.rows.forEach(r => addNewRow(r));
+  saveRows();
+  document.getElementById('templateLoadConfirm').classList.remove('visible');
+  pendingLoadTemplateId = null;
+  // Switch to Activities tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('[data-tab="activities"]').classList.add('active');
+  document.getElementById('tab-activities').classList.add('active');
+  searchBarWrap.style.display = '';
+}
+
+document.getElementById('tlcReplace').addEventListener('click', () => applyTemplateLoad('replace'));
+document.getElementById('tlcAppend').addEventListener('click',  () => applyTemplateLoad('append'));
+document.getElementById('tlcCancel').addEventListener('click',  () => {
+  document.getElementById('templateLoadConfirm').classList.remove('visible');
+  pendingLoadTemplateId = null;
+});
+
+// ── SAVED DAYS ────────────────────────────────────────────────────────────────
+function saveSavedDays() { localStorage.setItem('pomo_saved_days', JSON.stringify(savedDays)); }
+
+function renderSavedDays() {
+  const list  = document.getElementById('savedDaysList');
+  const empty = document.getElementById('savedDaysEmpty');
+  list.querySelectorAll('.saved-day-item').forEach(e => e.remove());
+  if (!savedDays.length) { empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  savedDays.slice().reverse().forEach((day, revIdx) => {
+    const realIdx = savedDays.length - 1 - revIdx;
+    const lessonsHtml = (day.lessons||[]).map(l =>
+      `<span class="saved-day-lesson">${l.name} · ${l.time}</span>`
+    ).join('');
+    const totalMins = (day.lessons||[]).reduce((s,l)=>s+(l.goalMinutes||0),0);
+    const doneCnt = (day.lessons||[]).filter(l=>l.done).length;
+    const item = document.createElement('div');
+    item.className = 'saved-day-item';
+    item.innerHTML = `
+      <div class="saved-day-header">
+        <div>
+          <div class="saved-day-name">${day.name||'Unnamed Day'}</div>
+          <div class="saved-day-meta">${day.date}</div>
+        </div>
+        <div class="saved-day-actions">
+          <button class="btn" onclick="exportSavedDay(${realIdx})">⬇ Export</button>
+          <button class="btn danger" onclick="deleteSavedDay(${realIdx})">× Del</button>
+        </div>
+      </div>
+      <div class="saved-day-stats">
+        <div class="saved-day-stat"><span>${totalMins}</span>min total</div>
+        <div class="saved-day-stat"><span>${day.lessons.length}</span>lessons</div>
+        <div class="saved-day-stat"><span>${doneCnt}</span>completed</div>
+      </div>
+      <div class="saved-day-lessons">${lessonsHtml}</div>`;
+    list.appendChild(item);
+  });
+}
+
+window.deleteSavedDay = function(idx) {
+  if (!confirm('Delete this saved day?')) return;
+  savedDays.splice(idx, 1);
+  saveSavedDays(); renderSavedDays();
+};
+
+window.exportSavedDay = function(idx) {
+  const day = savedDays[idx];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(day, null, 2)], {type:'application/json'}));
+  a.download = `day-${(day.name||'unnamed').toLowerCase().replace(/\s+/g,'-')}-${day.date}.json`;
+  a.click();
+};
+
+document.getElementById('clearSavedDaysBtn').onclick = () => {
+  if (!confirm('Clear all saved days?')) return;
+  savedDays = []; saveSavedDays(); renderSavedDays();
+};
+
+// ── FINISH DAY MODAL ──────────────────────────────────────────────────────────
+const finishOverlay = document.getElementById('finishOverlay');
+const finishClose   = document.getElementById('finishClose');
+const finishCancelBtn = document.getElementById('finishCancelBtn');
+
+function buildLessonSnapshot() {
+  const lessons = [];
+  document.querySelectorAll('.task-row').forEach(row => {
+    const name = row.querySelector('.activity-input').value || 'Untitled';
+    const goalMinutes = parseFloat(row.dataset.goal) || 25;
+    const done = row.classList.contains('done');
+    const pctEl = row.querySelector('.pct-text');
+    const pct = pctEl ? parseInt(pctEl.textContent) || 0 : 0;
+    const elapsed = Math.round(goalMinutes * pct / 100);
+    lessons.push({ name, goalMinutes, elapsed, done, tags: JSON.parse(row.dataset.tags||'[]') });
+  });
+  return lessons;
+}
+
+document.getElementById('finishDayBtn').onclick = () => {
+  const lessons = buildLessonSnapshot();
+  const dayName = dayNameInput.value.trim() || 'Untitled Day';
+  const totalMins = lessons.reduce((s,l)=>s+l.goalMinutes,0);
+  const doneCnt = lessons.filter(l=>l.done).length;
+
+  document.getElementById('finishDayTitle').textContent = dayName;
+  document.getElementById('fd-total-time').textContent = fmtMins(totalMins);
+  document.getElementById('fd-lessons').textContent = lessons.length;
+  document.getElementById('fd-done').textContent = doneCnt;
+
+  const list = document.getElementById('finishLessonsList');
+  list.innerHTML = '';
+  if (!lessons.length) {
+    list.innerHTML = '<div class="finish-empty">No activities found.</div>';
+  } else {
+    lessons.forEach(l => {
+      const item = document.createElement('div');
+      item.className = 'finish-lesson-item';
+      item.innerHTML = `<span class="finish-lesson-name">${l.name}</span><span class="finish-lesson-time">${l.goalMinutes}m</span>${l.done?'<span class="finish-lesson-done">✓ Done</span>':''}`;
+      list.appendChild(item);
+    });
+  }
+  finishOverlay.classList.add('open');
+};
+
+function closeFinishModal() { finishOverlay.classList.remove('open'); }
+finishClose.addEventListener('click', closeFinishModal);
+finishCancelBtn.addEventListener('click', closeFinishModal);
+finishOverlay.addEventListener('click', e => { if (e.target === finishOverlay) closeFinishModal(); });
+
+document.getElementById('finishSaveBtn').onclick = () => {
+  const lessons = buildLessonSnapshot();
+  const dayName = dayNameInput.value.trim() || 'Untitled Day';
+  const now = new Date();
+  const dateStr = now.toLocaleDateString([], {year:'numeric',month:'short',day:'numeric'});
+  const timeStr = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  const entry = {
+    name: dayName,
+    date: `${dateStr} ${timeStr}`,
+    lessons,
+    stats: { ...stats },
+    exported: now.toISOString()
+  };
+  savedDays.push(entry);
+  saveSavedDays(); renderSavedDays();
+  closeFinishModal();
+  // Switch to saved days tab
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const sdBtn = document.querySelector('[data-tab="saved-days"]');
+  if (sdBtn) sdBtn.classList.add('active');
+  document.getElementById('tab-saved-days').classList.add('active');
+  searchBarWrap.style.display = 'none';
+};
+
+document.getElementById('finishBackupBtn').onclick = () => {
+  const lessons = buildLessonSnapshot();
+  const dayName = dayNameInput.value.trim() || 'Untitled Day';
+  const data = {
+    pomo_stats: stats, pomo_history: sessionLog,
+    pomo_rows: JSON.parse(localStorage.getItem('pomo_rows')||'[]'),
+    pomo_goals: goals, pomo_theme: localStorage.getItem('pomo_theme')||'brutalist',
+    pomo_prog_color: progColor, pomo_day_name: dayName,
+    day_snapshot: { name: dayName, lessons, date: new Date().toISOString() },
+    exported: new Date().toISOString()
+  };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download = `focus-backup-${dayName.toLowerCase().replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+};
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
-saveStats(); renderHistory(); renderGoals(); applyHistoryCollapse();
+saveStats(); renderHistory(); renderGoals(); renderSavedDays(); renderTemplates(); applyHistoryCollapse();
 if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
 else addNewRow();
 
