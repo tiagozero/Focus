@@ -895,6 +895,215 @@
   .saved-days-empty { padding: 24px; text-align: center; color: var(--text-muted); font-size: 0.75rem; }
 
   /* ── MISC ────────────────────────────────────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════════════════════
+     VIEW SWITCHER
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  .view-switcher {
+    display: flex; gap: 0; border: 2px solid var(--border); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  .view-btn {
+    background: var(--surface); border: none; border-right: 1px solid var(--border);
+    color: var(--text-muted); cursor: pointer; padding: 0 9px; height: 36px;
+    font-size: 0.75rem; transition: all 0.15s; display: flex; align-items: center;
+    justify-content: center; gap: 4px; font-family: var(--font-body);
+    white-space: nowrap;
+  }
+  .view-btn:last-child { border-right: none; }
+  .view-btn:hover { background: var(--surface2); color: var(--text); }
+  .view-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .view-btn .view-icon { font-size: 0.85rem; }
+
+  /* ── VIEW 1: TABLE (default — no change needed, existing styles apply) ─── */
+
+  /* ── VIEW 2: TIMELINE ───────────────────────────────────────────────────── */
+  body.view-timeline #taskTable    { display: none !important; }
+  body.view-timeline #tableBody    { display: none !important; }
+  body.view-timeline .table-footer { display: none !important; }
+  body.view-timeline #timelineContainer { display: block !important; }
+
+  #timelineContainer {
+    display: none;
+    max-width: 900px; margin: 0 auto;
+  }
+
+  /* Each row: [prog-bar 8px] [spine 32px] [card flex] */
+  .tl-row {
+    display: grid;
+    grid-template-columns: 8px 32px 1fr;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  /* ── LEFT COLUMN: vertical progress fill bar ─────────────────────────── */
+  .tl-prog-col {
+    display: flex; flex-direction: column; align-items: center;
+    position: relative;
+  }
+  /* The track (full height, shows background) */
+  .tl-prog-track {
+    position: absolute; inset: 0;
+    background: var(--surface2);
+    border-right: 1px solid var(--border);
+  }
+  /* The fill that grows from top = % elapsed */
+  .tl-prog-fill {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: var(--accent);
+    transition: height 0.8s ease;
+    opacity: 0.9;
+  }
+
+  /* ── MIDDLE COLUMN: dot + connecting line ───────────────────────────── */
+  .tl-spine-col {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .tl-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--accent); border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+    margin-top: 22px; flex-shrink: 0; z-index: 1;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .tl-dot.done-dot    { background: var(--tag-low); box-shadow: 0 0 0 2px var(--tag-low); }
+  .tl-dot.running-dot { background: var(--accent);  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent); animation: pulse 1.2s infinite; }
+  .tl-line {
+    flex: 1; width: 2px; background: var(--border); min-height: 16px;
+  }
+  /* Done segment of the connecting line */
+  .tl-line.done-line { background: var(--tag-low); }
+
+  /* ── RIGHT COLUMN: the card ──────────────────────────────────────────── */
+  .tl-card {
+    margin: 10px 0 10px 16px;
+    border: 2px solid var(--border);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: border-color 0.2s;
+    overflow: hidden;
+  }
+  .tl-card.av-done    { opacity: 0.55; }
+  .tl-card.av-running { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent); }
+
+  /* Card header row */
+  .tl-card-head {
+    display: flex; align-items: stretch; gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--header-bg);
+  }
+  .tl-card-prio-bar { width: 5px; flex-shrink: 0; }
+  .tl-card-prio-bar.high { background: var(--tag-high); }
+  .tl-card-prio-bar.med  { background: var(--tag-med); }
+  .tl-card-prio-bar.low  { background: var(--tag-low); }
+
+  /* Editable name in header */
+  .tl-name-input {
+    flex: 1; border: none; background: transparent; color: var(--header-text);
+    font-family: var(--font-body); font-size: 0.88rem; font-weight: 700;
+    outline: none; padding: 10px 12px; min-width: 0;
+    caret-color: var(--accent);
+  }
+  .tl-name-input::placeholder { color: var(--header-text); opacity: 0.3; font-weight: 400; }
+  .tl-name-input:focus { background: color-mix(in srgb, var(--accent) 12%, var(--header-bg)); }
+  .av-done .tl-name-input { text-decoration: line-through; opacity: 0.6; }
+
+  /* Pct badge in header */
+  .tl-card-pct {
+    font-family: var(--font-title); font-size: 0.88rem; color: var(--accent);
+    padding: 10px 12px; flex-shrink: 0; white-space: nowrap;
+    display: flex; align-items: center;
+  }
+
+  /* Card body */
+  .tl-card-body {
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+
+  /* Horizontal progress bar inside card body */
+  .tl-card-bar-wrap {
+    flex: 1; height: 6px; min-width: 80px;
+    background: var(--surface2); border: 1px solid var(--border); overflow: hidden;
+  }
+  .tl-card-bar { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+
+  /* Goal adjuster inline */
+  .tl-goal-wrap {
+    display: inline-flex; align-items: center;
+    border: 1.5px solid var(--border); background: var(--surface); overflow: hidden; flex-shrink: 0;
+  }
+  .tl-goal-adj {
+    border: none; background: transparent; color: var(--text-muted);
+    cursor: pointer; padding: 3px 8px; font-size: 0.75rem; font-weight: 700;
+    font-family: var(--font-body); transition: all 0.12s;
+  }
+  .tl-goal-adj:hover { background: var(--border); color: var(--bg); }
+  .tl-goal-inp {
+    border: none; border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+    background: transparent; color: var(--text); font-family: var(--font-title);
+    font-size: 0.85rem; text-align: center; width: 46px; padding: 3px 2px; outline: none;
+  }
+  .tl-goal-inp:focus { background: var(--surface2); }
+  .tl-goal-unit { font-size: 0.52rem; color: var(--text-muted); padding: 0 7px; text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-body); }
+
+  /* Timer display */
+  .tl-timer {
+    font-family: var(--font-title); font-size: 1.3rem; color: var(--accent);
+    line-height: 1; flex-shrink: 0; min-width: 60px;
+  }
+  .tl-timer.urgent { color: var(--tag-high); animation: pulse 1s infinite; }
+
+  /* Tags row */
+  .tl-tags { display: flex; gap: 3px; flex-wrap: wrap; padding: 0 12px 8px; }
+  .tl-tag {
+    font-size: 0.5rem; padding: 1px 6px; border: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+    font-family: var(--font-body);
+  }
+
+  /* Subtasks in card */
+  .av-subtasks-wrap { border-top: 1px dashed var(--border); }
+  .av-subtasks-wrap .subtasks-section { background: var(--surface2); }
+
+  /* Card footer with action buttons */
+  .tl-card-btns {
+    display: flex; gap: 0; border-top: 1px solid var(--border);
+  }
+  .tl-card-btn {
+    border: none; border-right: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    cursor: pointer; padding: 8px 16px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tl-card-btn:last-child { border-right: none; }
+  .tl-card-btn:hover { background: var(--border); color: var(--bg); }
+  .tl-start-btn { background: var(--border); color: var(--bg); }
+  .tl-start-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tl-start-btn.done-state { background: var(--tag-low); color: #fff; cursor: default; }
+  .tl-settings-btn { color: var(--text-muted); }
+  .tl-delete-btn { color: var(--tag-high); margin-left: auto; }
+  .tl-delete-btn:hover { background: var(--tag-high); color: #fff; }
+
+  /* Add button below timeline */
+  .tl-add-btn {
+    display: block; width: 100%; padding: 14px;
+    border: 2px dashed var(--border);
+    background: transparent; color: var(--text-muted); cursor: pointer;
+    font-family: var(--font-title); font-size: 1rem; letter-spacing: 3px;
+    text-transform: uppercase; transition: all 0.15s; margin-top: 8px; text-align: center;
+  }
+  .tl-add-btn:hover { background: var(--surface); color: var(--text); border-style: solid; }
+
+  /* ── Shared av- classes still used ──────────────────────────────────── */
+  .av-sub-badge {
+    font-size: 0.52rem; padding: 2px 6px; letter-spacing: 1px;
+    border: 1px solid var(--border); color: var(--accent); text-transform: uppercase;
+    font-family: var(--font-body); display: inline-block;
+  }
+
+  .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; animation: confettiFall 1.2s ease-in forwards; pointer-events: none; z-index: 9999; }
   .confetti-piece { position: fixed; width: 8px; height: 8px; top: -10px; animation: confettiFall 1.2s ease-in forwards; pointer-events: none; z-index: 9999; }
   @keyframes confettiFall { 0%{transform:translateY(0) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
   @keyframes flashGreen { 0%{background:var(--row-bg)} 30%{background:rgba(139,195,74,0.2)} 100%{background:var(--row-bg)} }
@@ -1408,6 +1617,10 @@
     <button class="icon-btn" id="finishDayBtn" style="background:var(--accent);border-color:var(--accent);color:#fff;">🏁 Finish Day</button>
     <button class="icon-btn" id="focusLockBtn">⊙ Focus</button>
     <button class="icon-btn" id="historyToggleBtn">◷ History</button>
+    <div class="view-switcher" id="viewSwitcher" title="Switch view">
+      <button class="view-btn active" data-view="table" title="Table view"><span class="view-icon">☰</span> Table</button>
+      <button class="view-btn" data-view="timeline" title="Timeline view"><span class="view-icon">◫</span> Timeline</button>
+    </div>
     <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
     <div class="hamburger-wrap">
       <button class="hamburger-btn" id="drawerOpenBtn" title="Goals (G) · Templates (T) · Saved Days (S)">
@@ -1475,6 +1688,12 @@
       <button class="add-btn" onclick="addNewRow()">+ Add Activity</button>
       <button class="clear-done-btn" id="clearDoneBtn" title="Remove all completed rows">✓ Clear Done</button>
     </div>
+  </div>
+
+  <!-- ── TIMELINE VIEW ────────────────────────────────────────────────────── -->
+  <div id="timelineContainer">
+    <div id="timelineRows"></div>
+    <button class="tl-add-btn" onclick="addNewRow()">＋ Add Activity</button>
   </div>
 
   <div class="history-panel">
@@ -2494,7 +2713,8 @@ function fmt(s){
     // Close any existing popup first
     closePopup();
 
-    const row = btn.closest('tr');
+    // Support being called with a direct tr row element (from alt views)
+    const row = (btn && btn.tagName === 'TR') ? btn : btn.closest('tr');
     const prioSel   = row.querySelector('.priority-select');
     const goalInp   = row.querySelector('.goal-input');
     const tagsChips = row.querySelector('.tags-chips');
@@ -3341,7 +3561,380 @@ function triggerCsvExport() {
   showToast('CSV exported ✓', 'success');
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+// ── VIEW SYSTEM ───────────────────────────────────────────────────────────────
+(function() {
+  let currentView = localStorage.getItem('pomo_view') || 'table';
+  let tickInterval = null;
+
+  // ── Patch openRowPopup to also accept a bare <tr> element ────────────────
+  const _orig = window.openRowPopup;
+  window.openRowPopup = function(btn) {
+    if (btn && btn.tagName === 'TR') {
+      // Synthesise a minimal object that satisfies btn.closest('tr')
+      _orig({ closest: () => btn });
+    } else {
+      _orig(btn);
+    }
+  };
+
+  function applyView(view) {
+    ['table','timeline'].forEach(v => document.body.classList.remove('view-' + v));
+    if (view !== 'table') document.body.classList.add('view-' + view);
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    currentView = view;
+    localStorage.setItem('pomo_view', view);
+    if (view === 'timeline') {
+      buildTimeline();
+      if (!tickInterval) tickInterval = setInterval(tickTimeline, 500);
+    } else {
+      reclaimSubtasks();
+      if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
+    }
+  }
+
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyView(btn.dataset.view));
+  });
+
+  // ── Return subtask sections to their source rows before rebuild ───────────
+  function reclaimSubtasks() {
+    document.querySelectorAll('.av-subtasks-wrap').forEach(wrap => {
+      const section = wrap.querySelector('.subtasks-section');
+      if (section && wrap._sourceRow) {
+        const stage = wrap._sourceRow.querySelector('.activity-stage');
+        if (stage) stage.appendChild(section);
+      }
+    });
+    // Remove the whole timeline DOM (re-created on next build)
+    const rows = document.getElementById('timelineRows');
+    if (rows) rows.innerHTML = '';
+  }
+
+  // ── Read live data from a hidden task-row ─────────────────────────────────
+  function rowData(row) {
+    const timeCell = row.querySelector('.time-cell');
+    const pctEl    = row.querySelector('.pct-text');
+    const startBtn = row.querySelector('[data-role="start-btn"]');
+    const prioSel  = row.querySelector('.priority-select');
+    const goalInp  = row.querySelector('.goal-input');
+    return {
+      row,
+      name:     row.querySelector('.activity-input').value || '',
+      timeText: timeCell ? timeCell.textContent.trim() : '0:00',
+      pct:      pctEl ? (parseInt(pctEl.textContent) || 0) : 0,
+      prio:     prioSel ? prioSel.value : 'med',
+      goalMins: goalInp ? (parseFloat(goalInp.value) || 25) : 25,
+      running:  !!(startBtn && startBtn.textContent === '⏸'),
+      done:     row.classList.contains('done'),
+      urgent:   !!(timeCell && timeCell.classList.contains('urgent')),
+      tags:     JSON.parse(row.dataset.tags || '[]'),
+      startTime: row.dataset.startTime || '',
+    };
+  }
+
+  // ── Assign stable IDs to rows ─────────────────────────────────────────────
+  let _vid = 0;
+  function ensureVid(row) {
+    if (!row.dataset.vid) row.dataset.vid = 'r' + (++_vid);
+    return row.dataset.vid;
+  }
+
+  // ── Build one timeline card ───────────────────────────────────────────────
+  function buildTimelineCard(row, index, isLast) {
+    const d   = rowData(row);
+    const vid = ensureVid(row);
+
+    // ── Root: 3-column grid row ──────────────────────────────────────────
+    const tlRow = document.createElement('div');
+    tlRow.className = 'tl-row';
+    tlRow.dataset.rowId = vid;
+
+    // ── Column 1: vertical progress bar ─────────────────────────────────
+    const progCol = document.createElement('div');
+    progCol.className = 'tl-prog-col';
+    const progTrack = document.createElement('div');
+    progTrack.className = 'tl-prog-track';
+    const progFill = document.createElement('div');
+    progFill.className = 'tl-prog-fill';
+    progFill.style.height = d.pct + '%';
+    // Done rows: fill the whole bar in green
+    if (d.done) {
+      progFill.style.height = '100%';
+      progFill.style.background = 'var(--tag-low)';
+    }
+    progCol.appendChild(progTrack);
+    progCol.appendChild(progFill);
+
+    // ── Column 2: dot + connecting line ─────────────────────────────────
+    const spineCol = document.createElement('div');
+    spineCol.className = 'tl-spine-col';
+    const dot = document.createElement('div');
+    dot.className = 'tl-dot' +
+      (d.done ? ' done-dot' : '') +
+      (d.running ? ' running-dot' : '');
+    const line = document.createElement('div');
+    line.className = 'tl-line' + (d.done ? ' done-line' : '');
+    spineCol.appendChild(dot);
+    if (!isLast) spineCol.appendChild(line);
+
+    // ── Column 3: the card ───────────────────────────────────────────────
+    const card = document.createElement('div');
+    card.className = 'tl-card' +
+      (d.done    ? ' av-done'    : '') +
+      (d.running ? ' av-running' : '');
+
+    // ── Card header ──────────────────────────────────────────────────────
+    const head = document.createElement('div');
+    head.className = 'tl-card-head';
+
+    const prioBar = document.createElement('div');
+    prioBar.className = 'tl-card-prio-bar ' + d.prio;
+
+    const nameInp = document.createElement('input');
+    nameInp.type = 'text';
+    nameInp.className = 'tl-name-input';
+    nameInp.value = d.name;
+    nameInp.placeholder = 'What are you working on?';
+    nameInp.addEventListener('input', () => {
+      const hidden = row.querySelector('.activity-input');
+      if (hidden) { hidden.value = nameInp.value; hidden.dispatchEvent(new Event('input')); }
+    });
+    nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') nameInp.blur(); });
+
+    const pctBadge = document.createElement('div');
+    pctBadge.className = 'tl-card-pct';
+    pctBadge.textContent = d.pct + '%';
+
+    head.appendChild(prioBar);
+    head.appendChild(nameInp);
+    head.appendChild(pctBadge);
+
+    // ── Card body: horizontal progress + timer + goal adjuster ──────────
+    const body = document.createElement('div');
+    body.className = 'tl-card-body';
+
+    const barWrap = document.createElement('div');
+    barWrap.className = 'tl-card-bar-wrap';
+    const bar = document.createElement('div');
+    bar.className = 'tl-card-bar';
+    bar.style.width = d.pct + '%';
+    barWrap.appendChild(bar);
+
+    const timer = document.createElement('div');
+    timer.className = 'tl-timer' + (d.urgent ? ' urgent' : '');
+    timer.textContent = d.timeText;
+
+    // Goal adjuster
+    const goalWrap = document.createElement('div');
+    goalWrap.className = 'tl-goal-wrap';
+    const minusBtn = document.createElement('button');
+    minusBtn.className = 'tl-goal-adj'; minusBtn.textContent = '−';
+    const goalInpEl = document.createElement('input');
+    goalInpEl.type = 'number'; goalInpEl.min = 1; goalInpEl.max = 9999;
+    goalInpEl.className = 'tl-goal-inp';
+    goalInpEl.value = Math.round(d.goalMins);
+    goalInpEl.title = 'Goal minutes';
+    const plusBtn = document.createElement('button');
+    plusBtn.className = 'tl-goal-adj'; plusBtn.textContent = '+';
+    const goalUnit = document.createElement('span');
+    goalUnit.className = 'tl-goal-unit'; goalUnit.textContent = 'min';
+
+    function applyGoal(val) {
+      goalInpEl.value = val;
+      const hidden = row.querySelector('.goal-input');
+      if (hidden) { hidden.value = val; hidden.dispatchEvent(new Event('input')); }
+      // Also update the prog bar height immediately
+      const pctNow = rowData(row).pct;
+      progFill.style.height = pctNow + '%';
+    }
+    minusBtn.addEventListener('click', () => applyGoal(Math.max(1, (parseInt(goalInpEl.value)||25) - 1)));
+    plusBtn.addEventListener('click',  () => applyGoal(Math.max(1, (parseInt(goalInpEl.value)||25) + 1)));
+    goalInpEl.addEventListener('change', () => applyGoal(Math.max(1, parseInt(goalInpEl.value)||1)));
+
+    goalWrap.appendChild(minusBtn);
+    goalWrap.appendChild(goalInpEl);
+    goalWrap.appendChild(plusBtn);
+    goalWrap.appendChild(goalUnit);
+
+    body.appendChild(barWrap);
+    body.appendChild(timer);
+    body.appendChild(goalWrap);
+
+    // ── Tags ─────────────────────────────────────────────────────────────
+    let tagsEl = null;
+    if (d.tags.length) {
+      tagsEl = document.createElement('div');
+      tagsEl.className = 'tl-tags';
+      d.tags.forEach(t => {
+        const chip = document.createElement('span');
+        chip.className = 'tl-tag'; chip.textContent = t;
+        tagsEl.appendChild(chip);
+      });
+    }
+
+    // ── Subtasks: physically move live section into card ─────────────────
+    const subSection = row.querySelector('.subtasks-section');
+    let subWrap = null;
+    if (subSection) {
+      subWrap = document.createElement('div');
+      subWrap.className = 'av-subtasks-wrap';
+      subWrap._sourceRow = row;
+      subWrap.appendChild(subSection);
+    }
+
+    // ── Card footer: actions ─────────────────────────────────────────────
+    const btns = document.createElement('div');
+    btns.className = 'tl-card-btns';
+
+    const startBtn2 = document.createElement('button');
+    startBtn2.className = 'tl-card-btn tl-start-btn' + (d.done ? ' done-state' : '');
+    startBtn2.textContent = d.done ? '✓ Done' : (d.running ? '⏸ Pause' : '▶ Start');
+    startBtn2.addEventListener('click', () => {
+      const hBtn = row.querySelector('[data-role="start-btn"]');
+      if (hBtn && !d.done) hBtn.click();
+      setTimeout(() => buildTimeline(), 60);
+    });
+
+    const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'tl-card-btn tl-settings-btn';
+    settingsBtn.textContent = '⚙ Settings';
+    settingsBtn.addEventListener('click', () => {
+      window.openRowPopup(row);
+      setTimeout(() => buildTimeline(), 400);
+    });
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'tl-card-btn tl-delete-btn';
+    deleteBtn.textContent = '× Remove';
+    deleteBtn.addEventListener('click', () => {
+      // Reclaim subtasks before removing row
+      if (subWrap && subSection) {
+        const stage = row.querySelector('.activity-stage');
+        if (stage) stage.appendChild(subSection);
+      }
+      row.remove();
+      saveRows(); updatePlannedTime();
+      buildTimeline();
+    });
+
+    btns.appendChild(startBtn2);
+    btns.appendChild(settingsBtn);
+    btns.appendChild(deleteBtn);
+
+    // ── Assemble card ────────────────────────────────────────────────────
+    card.appendChild(head);
+    card.appendChild(body);
+    if (tagsEl) card.appendChild(tagsEl);
+    if (subWrap) card.appendChild(subWrap);
+    card.appendChild(btns);
+
+    // ── Assemble full row ────────────────────────────────────────────────
+    tlRow.appendChild(progCol);
+    tlRow.appendChild(spineCol);
+    tlRow.appendChild(card);
+
+    return tlRow;
+  }
+
+  // ── Full rebuild of the timeline ──────────────────────────────────────────
+  function buildTimeline() {
+    reclaimSubtasks();
+    const container = document.getElementById('timelineRows');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const visible = Array.from(document.querySelectorAll('.task-row'))
+      .filter(r => !r.classList.contains('search-hidden'));
+
+    visible.forEach((row, i) => {
+      container.appendChild(buildTimelineCard(row, i, i === visible.length - 1));
+    });
+  }
+
+  // ── Tick: update live data without full rebuild ───────────────────────────
+  function tickTimeline() {
+    const container = document.getElementById('timelineRows');
+    if (!container) return;
+
+    container.querySelectorAll('.tl-row[data-row-id]').forEach(tlRow => {
+      const row = document.querySelector(`.task-row[data-vid="${tlRow.dataset.rowId}"]`);
+      if (!row) return;
+      const d = rowData(row);
+
+      // Vertical progress fill
+      const fill = tlRow.querySelector('.tl-prog-fill');
+      if (fill) {
+        fill.style.height = d.done ? '100%' : (d.pct + '%');
+        fill.style.background = d.done ? 'var(--tag-low)' : 'var(--accent)';
+      }
+
+      // Dot state
+      const dot = tlRow.querySelector('.tl-dot');
+      if (dot) {
+        dot.classList.toggle('done-dot',    d.done);
+        dot.classList.toggle('running-dot', d.running && !d.done);
+      }
+
+      // Connector line
+      const line = tlRow.querySelector('.tl-line');
+      if (line) line.classList.toggle('done-line', d.done);
+
+      // Card border
+      const card = tlRow.querySelector('.tl-card');
+      if (card) {
+        card.classList.toggle('av-done',    d.done);
+        card.classList.toggle('av-running', d.running && !d.done);
+      }
+
+      // Timer
+      const timer = tlRow.querySelector('.tl-timer');
+      if (timer) {
+        timer.textContent = d.timeText;
+        timer.classList.toggle('urgent', d.urgent);
+      }
+
+      // Horizontal bar
+      const bar = tlRow.querySelector('.tl-card-bar');
+      if (bar) bar.style.width = d.pct + '%';
+
+      // Pct badge
+      const pct = tlRow.querySelector('.tl-card-pct');
+      if (pct) pct.textContent = d.pct + '%';
+
+      // Name (only if not focused)
+      const nameInp = tlRow.querySelector('.tl-name-input');
+      if (nameInp && document.activeElement !== nameInp) {
+        nameInp.value = d.name;
+      }
+
+      // Start button
+      const startBtn2 = tlRow.querySelector('.tl-start-btn');
+      if (startBtn2) {
+        startBtn2.textContent = d.done ? '✓ Done' : (d.running ? '⏸ Pause' : '▶ Start');
+        startBtn2.classList.toggle('done-state', d.done);
+      }
+    });
+  }
+
+  // ── Expose & MutationObserver ─────────────────────────────────────────────
+  window.refreshAltViews = function() {
+    if (currentView === 'timeline') buildTimeline();
+  };
+
+  const observer = new MutationObserver(() => {
+    if (currentView === 'timeline') {
+      clearTimeout(observer._t);
+      observer._t = setTimeout(buildTimeline, 140);
+    }
+  });
+  const tb = document.getElementById('tableBody');
+  if (tb) observer.observe(tb, { childList: true, attributes: true,
+    attributeFilter: ['class','data-goal','data-tags'], subtree: false });
+
+  applyView(currentView);
+})();
+
+
 saveStats(); renderHistory(); renderGoals(); renderSavedDays(); renderTemplates(); applyHistoryCollapse();
 if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
 else addNewRow();
