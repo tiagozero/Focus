@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FOCUS — Pomodoro Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23111111'/><text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Impact,Arial Narrow,sans-serif' font-size='18' font-weight='900' fill='%23ff4d00' letter-spacing='-1'>FO</text><rect x='0' y='20' width='32' height='3' fill='%23ff4d00' opacity='0.7'/></svg>">
 <style>
   /* ── THEME DEFINITIONS ──────────────────────────────────────────────────── */
   [data-theme="brutalist"] {
@@ -410,12 +411,7 @@
     z-index: 5; color: var(--text); pointer-events: none; font-weight: 700;
   }
 
-  /* ── TAGS ROW ─────────────────────────────────────────────────────────────── */
-  .tags-row {
-    min-height: 26px; padding: 4px 8px 4px 10px;
-    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
-    border-top: 1px dashed var(--border); background: var(--surface2);
-  }
+  /* ── TAGS ROW (now in settings panel) ────────────────────────────────────── */
   .tag-chip {
     display: inline-flex; align-items: center; gap: 3px; padding: 2px 7px;
     border: 1.5px solid var(--border); font-size: 0.58rem;
@@ -430,16 +426,77 @@
   }
   .tag-input::placeholder { color: var(--text-muted); opacity: 0.6; font-style: italic; }
 
-  /* ── PRIORITY ───────────────────────────────────────────────────────────────── */
-  .priority-cell { width: 90px; text-align: center; padding: 0 6px; }
-  .priority-select {
-    border: 2px solid var(--border); background: var(--surface); color: var(--text);
-    font-family: var(--font-body); font-size: 0.6rem; padding: 4px;
-    cursor: pointer; text-transform: uppercase; letter-spacing: 1px; width: 100%; outline: none;
+  /* ── ROW ACTION POPUP ──────────────────────────────────────────────────────── */
+  .row-popup {
+    position: fixed; z-index: 8000;
+    background: var(--surface); border: 2px solid var(--border);
+    box-shadow: var(--shadow); min-width: 220px;
+    animation: slideUp 0.15s ease;
+    display: none;
   }
-  .priority-select.high { border-color: var(--tag-high); color: var(--tag-high); }
-  .priority-select.med  { border-color: var(--tag-med);  color: var(--tag-med);  }
-  .priority-select.low  { border-color: var(--tag-low);  color: var(--tag-low);  }
+  .row-popup.open { display: block; }
+  .row-popup-header {
+    background: var(--header-bg); color: var(--header-text);
+    padding: 8px 12px; font-family: var(--font-title);
+    font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .row-popup-close {
+    background: none; border: none; color: var(--header-text);
+    cursor: pointer; font-size: 1rem; line-height: 1; opacity: 0.7;
+  }
+  .row-popup-close:hover { opacity: 1; }
+  .row-popup-section {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .row-popup-section:last-child { border-bottom: none; }
+  .row-popup-label {
+    font-size: 0.55rem; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-muted); font-weight: 700;
+  }
+  .row-popup-row {
+    display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+  }
+  .prio-btn {
+    flex: 1; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text-muted); cursor: pointer; padding: 5px 4px;
+    font-family: var(--font-body); font-weight: 700; font-size: 0.58rem;
+    text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s;
+    text-align: center;
+  }
+  .prio-btn:hover { background: var(--surface2); }
+  .prio-btn.active-high { background: var(--tag-high); border-color: var(--tag-high); color: #fff; }
+  .prio-btn.active-med  { background: var(--tag-med);  border-color: var(--tag-med);  color: #fff; }
+  .prio-btn.active-low  { background: var(--tag-low);  border-color: var(--tag-low);  color: #fff; }
+  .popup-time-adj {
+    display: flex; align-items: center; gap: 0; border: 1.5px solid var(--border); overflow: hidden;
+  }
+  .popup-time-adj .btn { border: none; border-right: 1px solid var(--border); flex: 1; height: 28px; padding: 0; }
+  .popup-time-adj .btn:last-child { border-right: none; }
+  .popup-goal-input {
+    flex: 1; border: 1.5px solid var(--border); background: var(--surface);
+    color: var(--text); font-family: var(--font-body); font-size: 0.8rem;
+    padding: 4px 8px; outline: none; width: 70px;
+  }
+  .popup-goal-unit { font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .popup-tag-chips { display: flex; flex-wrap: wrap; gap: 3px; }
+  .popup-tag-input {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    font-family: var(--font-body); font-size: 0.7rem; padding: 4px 8px;
+    outline: none; width: 100%;
+  }
+  .popup-tag-input::placeholder { color: var(--text-muted); opacity: 0.5; font-style: italic; }
+  .popup-danger-row {
+    display: flex; gap: 4px;
+  }
+
+  .prio-pill.high { border-color: var(--tag-high); color: var(--tag-high); }
+  .prio-pill.med  { border-color: var(--tag-med);  color: var(--tag-med);  }
+  .prio-pill.low  { border-color: var(--tag-low);  color: var(--tag-low);  }
+
+  /* priority-select kept for data compat but hidden */
+  .priority-select { display: none; }
 
   /* ── DRAG ───────────────────────────────────────────────────────────────────── */
   .drag-handle { width: 28px; text-align: center; cursor: grab; color: var(--text-muted); font-size: 1.1rem; padding: 0; user-select: none; touch-action: none; }
@@ -450,12 +507,30 @@
   .drag-ghost { border-collapse: collapse; }
 
   /* ── ACTIONS ────────────────────────────────────────────────────────────────── */
-  .actions-cell { width: 230px; padding: 0 6px; }
-  .actions { display: flex; gap: 3px; justify-content: center; align-items: center; height: 54px; }
+  .actions-cell { width: 160px; padding: 0; }
+  .actions {
+    display: flex; gap: 0; justify-content: center; align-items: stretch;
+    height: 54px; padding: 0 6px;
+  }
+  /* Every child in .actions gets the same box */
+  .actions > * {
+    width: 34px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--border);
+    margin-right: -1.5px; /* collapse borders */
+    font-family: var(--font-body); font-weight: 700;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px;
+    transition: all 0.15s; white-space: nowrap; cursor: pointer;
+    background: var(--surface); color: var(--text);
+  }
+  .actions > *:last-child { margin-right: 0; }
+  /* START is wider since it carries a word */
+  .actions > .btn.start { width: 52px; }
   .btn {
     border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
-    cursor: pointer; padding: 5px 7px; font-family: var(--font-body); font-weight: 700;
+    cursor: pointer; font-family: var(--font-body); font-weight: 700;
     font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; white-space: nowrap;
+    display: flex; align-items: center; justify-content: center;
   }
   .btn:hover { background: var(--border); color: var(--bg); }
   .btn.start { background: var(--border); color: var(--bg); }
@@ -464,13 +539,16 @@
   .btn.danger:hover { background: var(--tag-high); color: #fff; }
   .btn.min-btn { color: var(--text-muted); border-color: var(--border); }
   .btn.min-btn:hover { background: var(--border); color: var(--bg); border-color: var(--border); }
-  .btn-settings-row {
-    display: none; background: var(--surface2);
-    border-top: 1px dashed var(--border); padding: 8px 14px;
-    gap: 12px; align-items: center; flex-wrap: wrap;
+  /* prio-pill inside .actions gets same box treatment */
+  .prio-pill {
+    font-size: 0.52rem; font-family: var(--font-body); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    border: 1.5px solid var(--border);
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
   }
-  .btn-settings-row.active { display: flex; }
-  .btn-settings-row label { color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
+  /* btn-settings-row removed — replaced by popup */
   .settings-input {
     border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
     font-family: var(--font-body); font-size: 0.8rem; padding: 3px 6px; width: 65px; outline: none;
@@ -488,7 +566,76 @@
   /* Row-bottom wrapper */
   .table-footer { display: flex; align-items: center; gap: 10px; margin-top: 10px; max-width: 900px; margin-left: auto; margin-right: auto; }
   .table-footer .add-btn { margin-top: 0; }
-  #rowCountBadge { font-family: var(--font-title); font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
+  #rowCountBadge { font-family: var(--font-title); font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; color: var(--header-text); opacity: 0.55; white-space: nowrap; }
+
+  /* ── TIME BLOCKING ──────────────────────────────────────────────────────────── */
+  .time-block-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-title); font-size: 0.65rem; letter-spacing: 1px;
+    color: var(--text-muted); padding: 2px 8px 2px 6px;
+    border-right: 1px dashed var(--border);
+    white-space: nowrap; cursor: default; flex-shrink: 0;
+  }
+  .time-block-pill.has-time { color: var(--accent); }
+  .time-block-pill-icon { font-size: 0.6rem; opacity: 0.6; }
+
+  /* ── FOCUS LOCK ──────────────────────────────────────────────────────────── */
+  .focus-lock-overlay {
+    position: fixed; inset: 0; z-index: 20000;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .focus-lock-overlay.open { opacity: 1; pointer-events: all; }
+  .focus-lock-inner {
+    width: 100%; max-width: 600px; padding: 40px 24px;
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+    text-align: center;
+  }
+  .focus-lock-label {
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 4px;
+    color: var(--text-muted); font-family: var(--font-body);
+  }
+  .focus-lock-name {
+    font-family: var(--font-title); font-size: clamp(2rem, 6vw, 4rem);
+    letter-spacing: 4px; color: var(--text); text-transform: uppercase; line-height: 1.1;
+  }
+  .focus-lock-timer {
+    font-family: var(--font-title); font-size: clamp(4rem, 16vw, 9rem);
+    color: var(--accent); letter-spacing: 4px; line-height: 1; transition: color 0.3s;
+  }
+  .focus-lock-timer.urgent { color: var(--tag-high); }
+  .focus-lock-progress {
+    width: 100%; height: 6px; background: var(--surface2);
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .focus-lock-progress-fill { height: 100%; background: var(--accent); transition: width 0.8s ease; }
+  .focus-lock-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .focus-lock-btn {
+    border: 2px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer; padding: 10px 24px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; transition: all 0.15s;
+  }
+  .focus-lock-btn:hover { background: var(--border); color: var(--bg); }
+  .focus-lock-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .focus-lock-btn.primary:hover { opacity: 0.85; }
+  .focus-lock-unlock {
+    position: fixed; top: 16px; right: 16px;
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted);
+    cursor: pointer; padding: 6px 14px; font-family: var(--font-body); font-weight: 700;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 1px; transition: all 0.15s; z-index: 20001;
+  }
+  .focus-lock-unlock:hover { color: var(--text); background: var(--surface2); }
+  .focus-lock-subtasks { width: 100%; display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow-y: auto; }
+  .focus-lock-sub {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    border: 1px solid var(--border); background: var(--surface2);
+    font-size: 0.72rem; font-family: var(--font-body);
+  }
+  .focus-lock-sub.done-sub { opacity: 0.45; text-decoration: line-through; }
+  .focus-lock-sub-timer { font-family: var(--font-title); color: var(--accent); margin-left: auto; }
 
   /* ── HISTORY ────────────────────────────────────────────────────────────────── */
   .history-panel { max-width: 900px; margin: 16px auto 0; border: 2px solid var(--border); box-shadow: var(--shadow); background: var(--surface); }
@@ -757,88 +904,356 @@
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
   .divider { height: 1px; background: var(--border); opacity: 0.4; }
 
+  /* ── SUB-TASKS ──────────────────────────────────────────────────────────────── */
+  .subtasks-section {
+    border-top: 1px dashed var(--border);
+    background: var(--surface2);
+  }
+  .subtasks-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px 6px 14px; cursor: pointer; user-select: none;
+    font-size: 0.58rem; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-muted); transition: background 0.15s;
+  }
+  .subtasks-header:hover { background: var(--bg); }
+  .subtasks-toggle-icon { font-size: 0.5rem; transition: transform 0.2s; flex-shrink: 0; }
+  .subtasks-section.expanded .subtasks-toggle-icon { transform: rotate(90deg); }
+  .subtasks-progress-mini {
+    flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+  }
+  .subtasks-progress-mini-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; border-radius: 2px; }
+  .subtasks-count { font-family: var(--font-title); color: var(--accent); font-size: 0.75rem; white-space: nowrap; }
+  .subtasks-add-btn {
+    border: none; background: none; color: var(--text-muted); cursor: pointer;
+    font-size: 0.7rem; padding: 0 4px; line-height: 1; transition: color 0.15s;
+  }
+  .subtasks-add-btn:hover { color: var(--accent); }
+
+  .subtasks-list {
+    display: none; flex-direction: column;
+  }
+  .subtasks-section.expanded .subtasks-list { display: flex; }
+
+  .subtask-row {
+    display: flex; align-items: center; gap: 0;
+    border-top: 1px solid var(--border);
+    background: var(--row-bg);
+    transition: background 0.2s;
+  }
+  .subtask-row.done-sub { opacity: 0.5; }
+  .subtask-row.active-sub {
+    background: color-mix(in srgb, var(--accent) 12%, var(--row-bg));
+    border-left: 3px solid var(--accent);
+  }
+  .subtask-row.active-sub .subtask-name-input { color: var(--text); font-weight: 700; }
+  .subtask-row.active-sub .subtask-timer { color: var(--accent); font-weight: 700; }
+  .subtask-done-check {
+    width: 32px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--text-muted); font-size: 0.8rem;
+    flex-shrink: 0; align-self: stretch; border-right: 1px solid var(--border);
+    transition: color 0.15s, background 0.15s;
+  }
+  .subtask-done-check:hover { color: var(--tag-low); background: var(--surface2); }
+  .subtask-row.done-sub .subtask-done-check { color: var(--tag-low); }
+  .subtask-name-input {
+    flex: 1; border: none; background: transparent; color: var(--text);
+    font-family: var(--font-body); font-size: 0.75rem; padding: 7px 10px;
+    outline: none;
+  }
+  .subtask-name-input::placeholder { color: var(--text-muted); opacity: 0.45; }
+  .subtask-row.done-sub .subtask-name-input { text-decoration: line-through; color: var(--text-muted); }
+  .subtask-timer {
+    font-family: var(--font-title); font-size: 0.9rem; color: var(--text-muted);
+    width: 48px; text-align: center; flex-shrink: 0;
+    border-left: 1px solid var(--border); padding: 0 6px; align-self: stretch;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.2s;
+  }
+  .subtask-timer.running { color: var(--accent); }
+  .subtask-timer.done-timer { color: var(--tag-low); }
+  .subtask-timer.urgent { color: var(--tag-high); animation: pulse 1s infinite; }
+  .subtask-actions {
+    display: flex; align-items: center; gap: 0;
+    border-left: 1px solid var(--border); flex-shrink: 0;
+  }
+  .subtask-btn {
+    border: none; background: none; color: var(--text-muted); cursor: pointer;
+    font-size: 0.6rem; font-family: var(--font-body); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; padding: 0 8px; align-self: stretch;
+    display: flex; align-items: center; transition: color 0.15s, background 0.15s;
+    border-right: 1px solid var(--border); white-space: nowrap;
+  }
+  .subtask-btn:last-child { border-right: none; }
+  .subtask-btn:hover { color: var(--text); background: var(--surface2); }
+  .subtask-btn.sub-start { color: var(--accent); }
+  .subtask-btn.sub-start:hover { background: var(--accent); color: #fff; }
+  .subtask-btn.sub-del:hover { color: var(--tag-high); background: var(--surface2); }
+  .subtask-min-input {
+    width: 34px; border: none; background: transparent; color: var(--text-muted);
+    font-family: var(--font-title); font-size: 0.75rem; text-align: center;
+    outline: none; padding: 0 2px; border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    align-self: stretch; flex-shrink: 0;
+  }
+  .subtask-min-input:focus { color: var(--text); background: var(--surface2); }
+  .subtask-btn.sub-adj { color: var(--text-muted); font-size: 0.65rem; padding: 0 5px; }
+  .subtask-btn.sub-adj:hover { color: var(--text); background: var(--surface2); }
+  .subtasks-add-row {
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+  }
+  .subtasks-new-input {
+    flex: 1; border: none; background: transparent; color: var(--text);
+    font-family: var(--font-body); font-size: 0.75rem; padding: 7px 14px;
+    outline: none;
+  }
+  .subtasks-new-input::placeholder { color: var(--text-muted); opacity: 0.4; font-style: italic; }
+  .subtasks-new-add-btn {
+    border: none; background: none; color: var(--text-muted); cursor: pointer;
+    font-size: 0.65rem; font-family: var(--font-body); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; padding: 7px 12px;
+    border-left: 1px solid var(--border); transition: color 0.15s, background 0.15s;
+    white-space: nowrap;
+  }
+  .subtasks-new-add-btn:hover { color: var(--accent); background: var(--surface2); }
+
+  /* settings-tags-section removed — replaced by popup */
+
+  /* ── TEMPLATE IMPROVEMENTS ───────────────────────────────────────────────── */
+  .template-stats-bar {
+    display: flex; gap: 16px; padding: 8px 16px 8px 32px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2); font-size: 0.6rem; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .template-stat { display: flex; flex-direction: column; gap: 1px; }
+  .template-stat strong { font-family: var(--font-title); font-size: 1rem; color: var(--accent); }
+  .template-row-priority-bar {
+    width: 3px; align-self: stretch; flex-shrink: 0; border-radius: 1px;
+  }
+  .template-row-priority-bar.high { background: var(--tag-high); }
+  .template-row-priority-bar.med  { background: var(--tag-med); }
+  .template-row-priority-bar.low  { background: var(--tag-low); }
+
+  /* ── MOBILE BOTTOM BAR ──────────────────────────────────────────────────────── */
+  .mobile-bar {
+    display: none;
+  }
   @media (max-width: 700px) {
-    body { padding: 16px 12px 60px; }
-    
-    /* Header Structure */
-    .app-header { flex-direction: column; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
-    .app-title { font-size: 2.5rem; }
-    .header-controls { justify-content: flex-start; gap: 8px; width: 100%; flex-wrap: wrap; }
-    .icon-btn { flex: 1 1 calc(50% - 8px); text-align: center; justify-content: center; height: 38px; }
-    .hamburger-btn { height: 38px; flex-shrink: 0; }
-    
-    /* Drawer full-width on mobile */
-    .drawer { width: 100vw; max-width: 100vw; }
-    
-    /* Stats Layout */
-    .stats-bar { grid-template-columns: repeat(2,1fr); padding: 0; }
-    .stat-cell { padding: 10px 4px; }
+    .mobile-bar {
+      display: flex;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 4000;
+      background: var(--header-bg); border-top: 2px solid var(--border);
+      height: 56px;
+    }
+    .mobile-bar-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px;
+      background: none; border: none; border-right: 1px solid var(--border);
+      color: var(--header-text); cursor: pointer; padding: 6px 4px;
+      opacity: 0.7; transition: opacity 0.15s, background 0.15s;
+      font-family: var(--font-body);
+    }
+    .mobile-bar-btn:last-child { border-right: none; }
+    .mobile-bar-btn:active { opacity: 1; background: rgba(255,255,255,0.08); }
+    .mobile-bar-btn.active-bar { opacity: 1; color: var(--accent); }
+    .mobile-bar-icon { font-size: 1.1rem; line-height: 1; }
+    .mobile-bar-label { font-size: 0.42rem; text-transform: uppercase; letter-spacing: 1.5px; }
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════════
+     MOBILE  ≤ 700 px
+     ════════════════════════════════════════════════════════════════════════════ */
+  @media (max-width: 700px) {
+
+    /* ── Base ─────────────────────────────────────────────────────────────── */
+    body { padding: 12px 12px 80px; }
+    .kbd-hints { display: none; }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    .app-header {
+      flex-direction: row; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .app-title { font-size: 2rem; letter-spacing: 2px; }
+    .app-subtitle { display: none; }
+    /* Collapse header controls — show only essential buttons */
+    .header-controls { gap: 6px; }
+    .icon-btn { height: 36px; padding: 0 10px; font-size: 0.55rem; }
+    /* Keep only Finish Day + Focus + Settings + Hamburger visible on mobile */
+    #historyToggleBtn { display: none; }
+
+    /* ── Day name bar ────────────────────────────────────────────────────── */
+    .day-name-bar { padding: 8px 12px; gap: 8px; }
+    .day-name-label { display: none; }
+    .day-name-input { font-size: 0.95rem; }
+    .day-clock { display: none; }
+
+    /* ── Stats bar ───────────────────────────────────────────────────────── */
+    .stats-bar {
+      grid-template-columns: repeat(2,1fr);
+    }
+    .stat-cell { padding: 10px 6px; }
     .stat-cell:nth-child(2) { border-right: 2px solid var(--border); }
     .stat-cell:nth-child(3) { border-top: 2px solid var(--border); border-right: 2px solid var(--border); }
     .stat-cell:nth-child(4) { border-top: 2px solid var(--border); border-right: none; }
-    .stat-num { font-size: 1.5rem; }
-    .kbd-hints { display: none; }
-    .day-clock { display: none; }
+    .stat-num { font-size: 1.4rem; }
+    .stat-label { font-size: 0.5rem; }
 
-    /* Convert Table to Flowing Cards */
+    /* ── Day progress ─────────────────────────────────────────────────────── */
+    .day-progress-wrap { margin: -10px auto 10px; }
+
+    /* ── Search bar ──────────────────────────────────────────────────────── */
+    .search-bar-wrap { margin-bottom: 10px; }
+
+    /* ── Drawer full-width ───────────────────────────────────────────────── */
+    .drawer { width: 100vw; max-width: 100vw; }
+    .drawer-tab-btn { font-size: 0.6rem; padding: 8px 4px; letter-spacing: 1px; }
+
+    /* ── Settings modal full-width ───────────────────────────────────────── */
+    .settings-modal { width: 100vw; max-width: 100vw; max-height: 100vh; border-radius: 0; border-left: none; border-right: none; }
+    .theme-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .color-picker-row { gap: 8px; flex-wrap: wrap; }
+
+    /* ── Table → Card stack ──────────────────────────────────────────────── */
     #taskTable, #taskTable tbody, #taskTable tr, #taskTable td { display: block; width: 100%; }
     #taskTable thead { display: none; }
     #taskTable { border: none; box-shadow: none; background: transparent; }
 
+    /* Each task row becomes a card */
     .task-row {
       display: grid !important;
       grid-template-areas:
-        "time priority handle"
-        "activity activity activity"
-        "actions actions actions";
-      grid-template-columns: 1fr auto 40px;
-      align-items: center;
-      margin-bottom: 16px;
+        "handle time actions"
+        "activity activity activity";
+      grid-template-columns: 36px 1fr auto;
+      align-items: stretch;
+      margin-bottom: 14px;
       border: 2px solid var(--border) !important;
       box-shadow: var(--shadow);
       background: var(--row-bg);
+      border-radius: 0;
     }
     .task-row td { padding: 0; border: none !important; }
+    .task-row.done { opacity: 0.6; }
 
-    .time-cell { grid-area: time; text-align: left; padding: 12px 16px !important; border-bottom: 1px solid var(--border) !important; font-size: 1.8rem; }
-    .priority-cell { grid-area: priority; padding: 12px 16px !important; border-bottom: 1px solid var(--border) !important; }
-    .drag-handle { grid-area: handle; padding: 12px 0 !important; border-bottom: 1px solid var(--border) !important; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+    /* Top bar of card */
+    .drag-handle {
+      grid-area: handle;
+      display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--border) !important;
+      border-bottom: 1px solid var(--border) !important;
+      font-size: 1rem; color: var(--text-muted);
+      padding: 0 !important; width: 36px;
+    }
+    .time-cell {
+      grid-area: time;
+      font-size: 1.6rem; padding: 10px 14px !important;
+      text-align: left;
+      border-bottom: 1px solid var(--border) !important;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .actions-cell {
+      grid-area: actions;
+      border-bottom: 1px solid var(--border) !important;
+      width: auto !important;
+    }
+    .activity-cell {
+      grid-area: activity;
+      width: 100%;
+    }
 
-    .activity-cell { grid-area: activity; border-bottom: 1px solid var(--border) !important; }
-    .tag-input { width: 100%; margin-top: 4px; }
+    /* Actions on mobile: uniform icon buttons in a row */
+    .actions {
+      height: 100%; padding: 0 4px;
+      display: flex; align-items: stretch; gap: 0;
+    }
+    .actions > * {
+      width: 40px !important; height: auto !important;
+      font-size: 0.9rem !important;
+      padding: 0 !important;
+    }
+    .actions > .btn.start { width: 48px !important; }
 
-    /* Reorganizing action buttons priority visually */
-    .actions-cell { grid-area: actions; }
-    .actions { height: auto; padding: 10px; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
-    .actions .btn { flex: 1 1 calc(20% - 8px); padding: 8px 0; font-size: 0.65rem; }
-    .actions .btn.start { flex: 1 1 100%; order: -1; padding: 12px; font-size: 0.85rem; letter-spacing: 2px; }
+    /* Activity main — slightly taller for touch */
+    .activity-main { height: 52px; }
+    .activity-input { font-size: 0.85rem; }
+    .pct-text { font-size: 0.85rem; }
+    .name-dark, .name-light { font-size: 0.85rem; }
 
-    /* Drag & Drop Handlers inside Mobile Grid */
-    .drag-placeholder { display: block !important; height: 160px !important; border: 2px dashed var(--accent) !important; margin-bottom: 16px; background: transparent !important; }
+    /* Time block pill hidden on mobile (shown in popup) */
+    .time-block-pill { display: none; }
+
+    /* Subtasks full-width, slightly larger touch targets */
+    .subtask-row { min-height: 40px; }
+    .subtask-done-check { width: 38px; font-size: 1rem; }
+    .subtask-name-input { font-size: 0.8rem; padding: 8px 10px; }
+    .subtask-timer { width: 52px; font-size: 0.95rem; }
+    .subtask-btn { padding: 0 10px; font-size: 0.75rem; }
+    .subtask-min-input { width: 38px; font-size: 0.85rem; }
+    .subtasks-new-input { font-size: 0.8rem; padding: 8px 12px; }
+    .subtasks-new-add-btn { padding: 8px 14px; font-size: 0.7rem; }
+
+    /* Drag ghost */
+    .drag-placeholder { display: block !important; height: 100px !important; border: 2px dashed var(--accent) !important; margin-bottom: 14px; background: transparent !important; }
     .drag-placeholder td { display: none !important; }
-    
     .drag-ghost { display: block; border: none !important; box-shadow: none !important; background: transparent !important; }
     .drag-ghost table, .drag-ghost tbody { display: block; width: 100%; }
-    .drag-ghost .task-row { box-shadow: 6px 6px 0 var(--accent) !important; border-color: var(--accent) !important; margin: 0; }
+    .drag-ghost .task-row { box-shadow: 4px 4px 0 var(--accent) !important; border-color: var(--accent) !important; margin: 0; }
 
-    /* Goals / Form Adjustments */
-    .goal-form { flex-direction: column; gap: 12px; align-items: stretch; }
+    /* ── Table footer ────────────────────────────────────────────────────── */
+    .table-footer { gap: 8px; margin-top: 8px; }
+    .add-btn { font-size: 0.9rem; padding: 12px; letter-spacing: 2px; }
+    .clear-done-btn { padding: 0 14px; font-size: 0.6rem; }
+
+    /* ── Row popup ────────────────────────────────────────────────────────── */
+    .row-popup {
+      position: fixed !important;
+      left: 8px !important; right: 8px !important; bottom: 8px !important;
+      top: auto !important; width: auto !important;
+      border-radius: 0;
+      max-height: 80vh; overflow-y: auto;
+    }
+    .row-popup-section { padding: 12px 14px; }
+
+    /* ── History panel ────────────────────────────────────────────────────── */
+    .history-item { flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; }
+    .history-duration { font-size: 1.2rem; align-self: flex-start; }
+
+    /* ── Goals / Form ────────────────────────────────────────────────────── */
+    .goal-form { flex-direction: column; gap: 10px; align-items: stretch; padding: 12px; }
     .goal-form-field { width: 100%; }
     .goal-form-field input { width: 100% !important; }
-    .goal-form > .btn { padding: 12px; margin-top: 4px; }
     .goal-top { flex-direction: column; gap: 8px; }
     .goal-right { text-align: left; }
+    .goal-nums { font-size: 1.2rem; }
 
-    /* History Stack */
-    .history-item { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; }
-    .history-duration { align-self: flex-start; font-size: 1.4rem; margin-top: 2px; }
+    /* ── Focus lock ───────────────────────────────────────────────────────── */
+    .focus-lock-inner { padding: 24px 16px; gap: 18px; }
+    .focus-lock-name { font-size: clamp(1.6rem, 8vw, 2.8rem); }
+    .focus-lock-timer { font-size: clamp(3.5rem, 20vw, 6rem); }
+    .focus-lock-btn { padding: 14px 28px; font-size: 0.85rem; }
 
-    /* Settings UI Stack */
-    .btn-settings-row { flex-direction: column; align-items: stretch; gap: 8px; }
-    .btn-settings-row label { display: block; margin-bottom: 4px; }
-    .settings-input { width: 100%; }
-    .theme-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .color-picker-row { gap: 12px; }
+    /* ── Finish day modal ─────────────────────────────────────────────────── */
+    .finish-modal { width: 100vw; max-width: 100vw; max-height: 100vh; }
+    .finish-summary { grid-template-columns: repeat(2,1fr); }
+    .finish-stat:nth-child(2) { border-right: none; }
+    .finish-stat:nth-child(3) { border-top: 1px solid var(--border); }
+    .finish-stat:nth-child(4) { border-top: 1px solid var(--border); border-right: none; }
+    .finish-actions { flex-direction: column; }
+    .finish-btn { width: 100%; text-align: center; padding: 12px; }
+
+    /* ── Saved days ───────────────────────────────────────────────────────── */
+    .saved-day-actions { flex-wrap: wrap; gap: 4px; }
+    .saved-day-stats { gap: 10px; }
+
+    /* ── Templates ────────────────────────────────────────────────────────── */
+    .template-save-bar { flex-direction: column; gap: 8px; }
+    .template-name-input { width: 100%; }
+    .template-item-header { flex-wrap: wrap; gap: 6px; }
+    .template-item-meta { display: none; }
+    .template-stats-bar { padding: 8px 12px; gap: 10px; }
   }
 </style>
 </head>
@@ -974,6 +1389,7 @@
     <button class="drawer-tab-btn active" data-drawer-tab="goals">Goals</button>
     <button class="drawer-tab-btn" data-drawer-tab="templates">Templates</button>
     <button class="drawer-tab-btn" data-drawer-tab="saved-days">Saved Days</button>
+    <button class="drawer-tab-btn" data-drawer-tab="data">Data</button>
   </div>
   <div class="drawer-body" id="drawerBody">
     <!-- Goals panel inserted here by JS -->
@@ -990,9 +1406,7 @@
   </div>
   <div class="header-controls">
     <button class="icon-btn" id="finishDayBtn" style="background:var(--accent);border-color:var(--accent);color:#fff;">🏁 Finish Day</button>
-    <button class="icon-btn" id="backupBtn">⬇ Backup</button>
-    <button class="icon-btn" id="restoreBtn">⬆ Restore</button>
-    <input type="file" id="restoreFile" accept=".json" style="display:none">
+    <button class="icon-btn" id="focusLockBtn">⊙ Focus</button>
     <button class="icon-btn" id="historyToggleBtn">◷ History</button>
     <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
     <div class="hamburger-wrap">
@@ -1051,9 +1465,8 @@
         <tr>
           <th style="width:28px"></th>
           <th class="center" style="width:88px">Time Left</th>
-          <th>Activity</th>
-          <th class="center" style="width:90px">Priority</th>
-          <th class="center" style="width:230px">Actions</th>
+          <th><span id="rowCountBadge"></span></th>
+          <th class="center" style="width:160px">Actions</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -1061,7 +1474,6 @@
     <div class="table-footer">
       <button class="add-btn" onclick="addNewRow()">+ Add Activity</button>
       <button class="clear-done-btn" id="clearDoneBtn" title="Remove all completed rows">✓ Clear Done</button>
-      <span id="rowCountBadge"></span>
     </div>
   </div>
 
@@ -1139,6 +1551,27 @@
   </div>
 </div>
 
+<div id="drawer-data-source" style="display:none">
+  <div>
+    <div style="padding:16px;border-bottom:1px solid var(--border);background:var(--surface2);">
+      <div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:10px;">Backup & Restore</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="icon-btn" id="backupBtn2" style="font-size:0.6rem;height:32px;">⬇ Export Backup</button>
+        <button class="icon-btn" id="restoreBtn2" style="font-size:0.6rem;height:32px;">⬆ Import Backup</button>
+        <input type="file" id="restoreFile2" accept=".json" style="display:none">
+      </div>
+      <div style="font-size:0.52rem;color:var(--text-muted);margin-top:8px;font-style:italic;">Save all data as JSON or restore from a previous backup.</div>
+    </div>
+    <div style="padding:16px;background:var(--surface2);margin-top:1px;">
+      <div style="font-size:0.55rem;text-transform:uppercase;letter-spacing:2px;color:var(--text-muted);font-weight:700;margin-bottom:10px;">Export CSV</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="icon-btn" id="exportCsvBtn2" style="font-size:0.6rem;height:32px;">⬇ Export CSV</button>
+      </div>
+      <div style="font-size:0.52rem;color:var(--text-muted);margin-top:8px;font-style:italic;">Download current board + session history as a spreadsheet.</div>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 // ── STATE ─────────────────────────────────────────────────────────────────────
@@ -1150,7 +1583,7 @@ let savedDays  = JSON.parse(localStorage.getItem('pomo_saved_days') || '[]');
 let templates  = JSON.parse(localStorage.getItem('pomo_templates')  || '[]');
 
 // ── PROGRESS BAR COLOR ────────────────────────────────────────────────────────
-let progColor = localStorage.getItem('pomo_prog_color') || '#ff4d00';
+let progColor  = localStorage.getItem('pomo_prog_color') || '#ff4d00';
 
 function applyProgColor(color) {
   progColor = color;
@@ -1185,10 +1618,34 @@ dayNameInput.addEventListener('input', () => {
     const m = String(n.getMinutes()).padStart(2,'0');
     const s = String(n.getSeconds()).padStart(2,'0');
     if (clockEl) clockEl.textContent = `${h}:${m}:${s}`;
+    // Update browser tab title with active timer
+    updateTabTitle();
   }
   tick();
   setInterval(tick, 1000);
 })();
+
+// ── TAB TITLE TIMER ──────────────────────────────────────────────────────────
+function updateTabTitle() {
+  // Find any running task row (has a PAUSE button)
+  const rows = document.querySelectorAll('.task-row');
+  let activeTime = null;
+  let activeName = null;
+  rows.forEach(row => {
+    const btn = row.querySelector('.btn.start');
+    if (btn && btn.textContent === '⏸') {
+      const timeCell = row.querySelector('.time-cell');
+      const nameInp  = row.querySelector('.activity-input');
+      if (timeCell) activeTime = timeCell.textContent.trim();
+      if (nameInp)  activeName = nameInp.value.trim() || 'Focus';
+    }
+  });
+  if (activeTime && activeName) {
+    document.title = `⏱ ${activeTime} — ${activeName}`;
+  } else {
+    document.title = 'FOCUS — Pomodoro Tracker';
+  }
+}
 
 // ── KEYBOARD SHORTCUTS ────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
@@ -1279,6 +1736,22 @@ customPicker.addEventListener('input', () => {
 setActivePreset(progColor);
 customPicker.value = progColor;
 
+
+
+// ── DATA BUTTON DELEGATION ────────────────────────────────────────────────────
+document.addEventListener('click', e => {
+  const id = e.target.id;
+  if (id === 'backupBtn' || id === 'backupBtn2') triggerBackup();
+  if (id === 'restoreBtn' || id === 'restoreBtn2') {
+    const fi = document.getElementById('restoreFile2') || document.getElementById('restoreFile');
+    if (fi) fi.click();
+  }
+  if (id === 'exportCsvBtn' || id === 'exportCsvBtn2') triggerCsvExport();
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'restoreFile' || e.target.id === 'restoreFile2') handleRestoreFile(e);
+});
+
 // ── RESET STATS / CLEAR ALL ───────────────────────────────────────────────────
 let resetStatsArmed = false;
 document.getElementById('resetStatsBtn').addEventListener('click', () => {
@@ -1360,6 +1833,10 @@ function saveStats() {
   updatePlannedTime();
 }
 
+// ── ROW SUBTASK REGISTRY ──────────────────────────────────────────────────────
+// Maps each task-row element to its live subtasks array (avoids dataset encoding issues)
+const rowSubtaskRegistry = new WeakMap();
+
 // ── ROWS ──────────────────────────────────────────────────────────────────────
 function saveRows() {
   const rows = [];
@@ -1368,7 +1845,11 @@ function saveRows() {
       name: row.querySelector('.activity-input').value,
       priority: row.querySelector('.priority-select').value,
       goalMinutes: parseFloat(row.dataset.goal) || 25,
-      tags: JSON.parse(row.dataset.tags || '[]')
+      tags: JSON.parse(row.dataset.tags || '[]'),
+      startTime: row.dataset.startTime || '',
+      subtasks: (rowSubtaskRegistry.get(row) || []).map(s => ({
+        name: s.name, minutes: s.minutes, done: s.done, secLeft: s.secLeft
+      }))
     });
   });
   localStorage.setItem('pomo_rows', JSON.stringify(rows));
@@ -1527,11 +2008,14 @@ function addNewRow(defaults={}) {
   row.className='task-row';
   let timerId=null;
   let goalMinutes=defaults.goalMinutes||25;
-  let totalSeconds=goalMinutes*60;
+  let totalSeconds=Math.round(goalMinutes*60);
   let secondsLeft=totalSeconds;
   let rowTags=Array.isArray(defaults.tags)?[...defaults.tags]:[];
+  row.dataset.startTime = defaults.startTime || '';
   row.dataset.goal=goalMinutes;
   row.dataset.tags=JSON.stringify(rowTags);
+
+  let rowSubtasks = Array.isArray(defaults.subtasks) ? JSON.parse(JSON.stringify(defaults.subtasks)) : [];
 
   row.innerHTML=`
     <td class="drag-handle">⠿</td>
@@ -1541,38 +2025,49 @@ function addNewRow(defaults={}) {
         <div class="activity-main">
           <div class="progress-bar-bg" style="background:${progColor}"></div>
           <div class="pct-text">0%</div>
+          <div class="time-block-pill${defaults.startTime ? ' has-time' : ''}" title="Start time (Time Block)">
+            <span class="time-block-pill-icon">⏰</span>
+            <span class="time-block-start">${defaults.startTime||''}</span>
+          </div>
           <div class="name-display">
             <div class="name-dark"><span class="name-placeholder">What are you working on?</span></div>
             <div class="name-light"><span class="name-placeholder">What are you working on?</span></div>
           </div>
           <input type="text" class="activity-input" value="${defaults.name||''}">
         </div>
-        <div class="tags-row">
-          <div class="tags-chips"></div>
-          <input type="text" class="tag-input" placeholder="Add tag + Enter">
+        <div class="subtasks-section" data-subtasks='${JSON.stringify(rowSubtasks)}'>
+          <div class="subtasks-header">
+            <span class="subtasks-toggle-icon">▶</span>
+            <span style="font-size:0.55rem;letter-spacing:1px;white-space:nowrap;">Sub-tasks</span>
+            <div class="subtasks-progress-mini"><div class="subtasks-progress-mini-fill" style="width:0%"></div></div>
+            <span class="subtasks-count">0/0</span>
+            <button class="subtasks-add-btn" title="Add sub-task">＋</button>
+          </div>
+          <div class="subtasks-list"></div>
+          <div class="subtasks-add-row" style="display:none">
+            <input type="text" class="subtasks-new-input" placeholder="New sub-task name…">
+            <input type="number" class="settings-input" style="width:48px;border:none;border-left:1px solid var(--border);background:transparent;padding:0 4px;text-align:center;font-size:0.8rem;align-self:stretch;" value="25" min="1" max="240" title="Minutes">
+            <button class="subtasks-new-add-btn">＋ Add</button>
+          </div>
         </div>
       </div>
     </td>
-    <td class="priority-cell">
-      <select class="priority-select ${defaults.priority||'med'}">
-        <option value="high" ${defaults.priority==='high'?'selected':''}>▲ High</option>
-        <option value="med"  ${(!defaults.priority||defaults.priority==='med')?'selected':''}>● Med</option>
-        <option value="low"  ${defaults.priority==='low'?'selected':''}>▼ Low</option>
-      </select>
-    </td>
     <td class="actions-cell">
       <div class="actions">
-        <button class="btn min-btn" onclick="adjustTime(this,-1)">−1m</button>
-        <button class="btn start">START</button>
-        <button class="btn min-btn" onclick="adjustTime(this,1)">+1m</button>
-        <button class="btn" onclick="toggleSettings(this)">⚙</button>
-        <button class="btn" onclick="resetRow(this)">↺</button>
+        <button class="btn start" data-role="start-btn">▶</button>
+        <span class="prio-pill ${defaults.priority||'med'}">${(defaults.priority||'med').toUpperCase()}</span>
+        <button class="btn" onclick="openRowPopup(this)" title="Settings">⚙</button>
         <button class="btn danger" onclick="removeRow(this)">×</button>
       </div>
-      <div class="btn-settings-row">
-        <label>Goal (min)</label>
-        <input type="number" class="settings-input goal-input" value="${goalMinutes}" min="1" max="240">
-      </div>
+      <!-- hidden select keeps data compat -->
+      <select class="priority-select ${defaults.priority||'med'}" style="display:none">
+        <option value="high" ${defaults.priority==='high'?'selected':''}>High</option>
+        <option value="med"  ${(!defaults.priority||defaults.priority==='med')?'selected':''}>Med</option>
+        <option value="low"  ${defaults.priority==='low'?'selected':''}>Low</option>
+      </select>
+      <input type="number" class="goal-input" style="display:none" value="${goalMinutes}" min="1" step="1" max="9999">
+      <div class="tags-chips" style="display:none"></div>
+      <input type="text" class="tag-input" style="display:none">
     </td>`;
 
   const timeDisp     = row.querySelector('.time-cell');
@@ -1587,7 +2082,290 @@ function addNewRow(defaults={}) {
   const nameLightDiv = row.querySelector('.name-light');
   const tagsChips    = row.querySelector('.tags-chips');
   const tagInput     = row.querySelector('.tag-input');
+  // settingsTagsSec removed (popup handles tags now)
+  const subtasksSection = row.querySelector('.subtasks-section');
+  const subtasksList    = row.querySelector('.subtasks-list');
+  const subtasksHeader  = row.querySelector('.subtasks-header');
+  const subtasksCount   = row.querySelector('.subtasks-count');
+  const subtasksProgFill= row.querySelector('.subtasks-progress-mini-fill');
+  const subtasksAddRow  = row.querySelector('.subtasks-add-row');
+  const subtasksNewInput= row.querySelector('.subtasks-new-input');
+  const subtasksNewMinInput = row.querySelector('.subtasks-add-row input[type="number"]');
+  const subtasksNewAddBtn   = row.querySelector('.subtasks-new-add-btn');
+  const subtasksAddBtn  = row.querySelector('.subtasks-add-btn');
   const PLACEHOLDER  = 'What are you working on?';
+
+  // ── SUBTASKS ────────────────────────────────────────────────────────────────
+  // Register this row's live subtask array so saveRows() can read it directly
+  rowSubtaskRegistry.set(row, rowSubtasks);
+
+  const subTimers = {}; // intervalId keyed by subtask index
+
+  function stopSubTimer(idx) {
+    if (subTimers[idx]) { clearInterval(subTimers[idx]); delete subTimers[idx]; }
+  }
+
+  function updateSubtasksHeader() {
+    const total = rowSubtasks.length;
+    const done  = rowSubtasks.filter(s => s.done).length;
+    subtasksCount.textContent    = total ? `${done}/${total}` : '0/0';
+    subtasksProgFill.style.width = total ? (done / total * 100) + '%' : '0%';
+  }
+
+  // Sync main task time to sum of subtask minutes, then persist everything
+  function commitSubtasks() {
+    if (rowSubtasks.length > 0 && !timerId && !row.classList.contains('done')) {
+      const totalSub = rowSubtasks.reduce((s, t) => s + (parseFloat(t.minutes) || 25), 0);
+      goalMinutes      = totalSub;
+      row.dataset.goal = goalMinutes;
+      totalSeconds     = goalMinutes * 60;
+      secondsLeft      = totalSeconds;
+      goalInp.value = goalMinutes;
+      startBtn.textContent = '▶';
+      startBtn.className   = 'btn start';
+      row.classList.remove('done', 'flash');
+      // updateUI is defined later in this closure — safe to call here at runtime
+      if (typeof updateUI === 'function') updateUI();
+    }
+    saveRows();
+    updateSubtasksHeader();
+  }
+
+  function renderAllSubtasks() {
+    Object.keys(subTimers).forEach(k => stopSubTimer(Number(k)));
+    subtasksList.innerHTML = '';
+
+    rowSubtasks.forEach((sub, idx) => {
+      const el = document.createElement('div');
+      el.className = 'subtask-row' + (sub.done ? ' done-sub' : '');
+
+      let secLeft = (sub.secLeft !== undefined) ? sub.secLeft : (sub.minutes || 25) * 60;
+
+      const check = document.createElement('div');
+      check.className = 'subtask-done-check';
+      check.title = 'Toggle done';
+      check.textContent = sub.done ? '✓' : '○';
+
+      const nameInp = document.createElement('input');
+      nameInp.type = 'text';
+      nameInp.className = 'subtask-name-input';
+      nameInp.value = sub.name || '';
+      nameInp.placeholder = 'Sub-task name…';
+
+      const minInp = document.createElement('input');
+      minInp.type = 'number';
+      minInp.className = 'subtask-min-input';
+      minInp.value = sub.minutes || 25;
+      minInp.min = 1; minInp.max = 480;
+      minInp.title = 'Minutes';
+
+      const timerEl = document.createElement('div');
+      timerEl.className = 'subtask-timer';
+      timerEl.textContent = fmt(secLeft);
+
+      const actions = document.createElement('div');
+      actions.className = 'subtask-actions';
+
+      const startB = document.createElement('button');
+      startB.className = 'subtask-btn sub-start';
+      startB.textContent = sub.done ? '✓' : '▶';
+
+      const delB = document.createElement('button');
+      delB.className = 'subtask-btn sub-del';
+      delB.textContent = '×';
+
+      const minusB = document.createElement('button');
+      minusB.className = 'subtask-btn sub-adj';
+      minusB.title = '-1 minute'; minusB.textContent = '−1m';
+
+      const plusB = document.createElement('button');
+      plusB.className = 'subtask-btn sub-adj';
+      plusB.title = '+1 minute'; plusB.textContent = '+1m';
+
+      actions.appendChild(minusB);
+      actions.appendChild(startB);
+      actions.appendChild(plusB);
+      actions.appendChild(delB);
+      el.appendChild(check);
+      el.appendChild(nameInp);
+      el.appendChild(minInp);
+      el.appendChild(timerEl);
+      el.appendChild(actions);
+      subtasksList.appendChild(el);
+
+      function refreshTimer() {
+        timerEl.textContent = fmt(secLeft);
+        timerEl.classList.toggle('urgent',    secLeft <= 60 && secLeft > 0 && !sub.done);
+        timerEl.classList.toggle('done-timer', sub.done);
+        timerEl.classList.toggle('running',    !!subTimers[idx]);
+      }
+      refreshTimer();
+
+      // ── −1m / +1m ──
+      function adjustSubTime(delta) {
+        stopSubTimer(idx);
+        const newMin = Math.max(1, (sub.minutes || 25) + delta);
+        sub.minutes = newMin;
+        minInp.value = newMin;
+        if (!sub.done) { secLeft = newMin * 60; sub.secLeft = secLeft; }
+        refreshTimer();
+        commitSubtasks();
+      }
+      minusB.addEventListener('click', () => adjustSubTime(-1));
+      plusB.addEventListener('click',  () => adjustSubTime(1));
+
+      // ── Start / Pause ──
+      startB.addEventListener('click', () => {
+        if (sub.done) return;
+        if (subTimers[idx]) {
+          // Pause this subtask
+          stopSubTimer(idx);
+          el.classList.remove('active-sub');
+          startB.textContent = '▶';
+          sub.secLeft = secLeft;
+          refreshTimer();
+          saveRows();
+          // Pause main task only if NO other subtask is running
+          const anyRunning = Object.keys(subTimers).length > 0;
+          if (!anyRunning && timerId) {
+            clearInterval(timerId); timerId = null;
+            startBtn.textContent = 'RESUME'; startBtn.className = 'btn';
+          }
+        } else {
+          if (secLeft === 0) return;
+          // Start this subtask
+          startB.textContent = '⏸';
+          el.classList.add('active-sub');
+          subTimers[idx] = setInterval(() => {
+            if (secLeft > 0) {
+              secLeft--; sub.secLeft = secLeft;
+              refreshTimer();
+            } else {
+              stopSubTimer(idx);
+              sub.done = true; sub.secLeft = 0; secLeft = 0;
+              el.classList.remove('active-sub');
+              el.classList.add('done-sub');
+              check.textContent  = '✓';
+              startB.textContent = '✓';
+              refreshTimer();
+              saveRows();
+              updateSubtasksHeader();
+              showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
+              // If all subtasks done, pause main
+              const anyRunning = Object.keys(subTimers).length > 0;
+              if (!anyRunning && timerId) {
+                clearInterval(timerId); timerId = null;
+                startBtn.textContent = 'RESUME'; startBtn.className = 'btn';
+              }
+            }
+          }, 1000);
+          refreshTimer();
+          // Auto-start main task if not already running
+          if (!timerId && !row.classList.contains('done') && secondsLeft > 0) {
+            startBtn.textContent = 'PAUSE'; startBtn.className = 'btn start';
+            timerId = setInterval(() => {
+              if (secondsLeft > 0) { secondsLeft--; updateUI(); }
+              else {
+                clearInterval(timerId); timerId = null;
+                startBtn.textContent = 'DONE ✓'; startBtn.className = 'btn';
+                progBg.style.width = '100%'; pctText.textContent = '100%';
+                nameLightDiv.style.clipPath = 'inset(0 0% 0 0)';
+                row.classList.add('done');
+                setTimeout(() => { row.classList.add('flash'); setTimeout(() => row.classList.remove('flash'), 1000); }, 50);
+                launchConfetti(); playDone();
+                const actName = actInput.value || 'Untitled';
+                showToast('✓ ' + actName + ' — ' + goalMinutes + 'm complete', 'success');
+                stats.sessions++; stats.minutes += goalMinutes; stats.tasks++;
+                saveStats(); addHistory(actInput.value, goalMinutes, rowTags); refreshGoalsFromHistory();
+                updateDayProgress();
+              }
+            }, 1000);
+          }
+        }
+      });
+
+      // ── Toggle done ──
+      check.addEventListener('click', () => {
+        stopSubTimer(idx);
+        sub.done = !sub.done;
+        secLeft = sub.done ? 0 : (sub.minutes || 25) * 60;
+        sub.secLeft = secLeft;
+        el.classList.toggle('done-sub', sub.done);
+        check.textContent  = sub.done ? '✓' : '○';
+        startB.textContent = sub.done ? '✓' : '▶';
+        refreshTimer();
+        saveRows();
+        updateSubtasksHeader();
+      });
+
+      // ── Name edit (persist only, no timer sync) ──
+      nameInp.addEventListener('input', () => {
+        sub.name = nameInp.value;
+        saveRows();
+      });
+
+      // ── Minutes change → sync main task time ──
+      minInp.addEventListener('change', () => {
+        stopSubTimer(idx);
+        sub.minutes = Math.max(1, parseFloat(minInp.value) || 25);
+        minInp.value = sub.minutes;
+        if (!sub.done) { secLeft = sub.minutes * 60; sub.secLeft = secLeft; }
+        refreshTimer();
+        commitSubtasks(); // syncs main timer + saves
+      });
+
+      // ── Delete ──
+      delB.addEventListener('click', () => {
+        stopSubTimer(idx);
+        rowSubtasks.splice(idx, 1);
+        renderAllSubtasks(); // re-render with updated indices
+        commitSubtasks();    // sync main timer + save
+      });
+    });
+
+    updateSubtasksHeader();
+    // Re-show add row if expanded
+    if (subtasksSection.classList.contains('expanded')) {
+      subtasksAddRow.style.display = 'flex';
+    }
+  }
+
+  renderAllSubtasks();
+
+  // ── Expand / collapse ──
+  subtasksHeader.addEventListener('click', e => {
+    if (e.target.classList.contains('subtasks-add-btn')) return;
+    subtasksSection.classList.toggle('expanded');
+    subtasksAddRow.style.display = subtasksSection.classList.contains('expanded') ? 'flex' : 'none';
+  });
+
+  subtasksAddBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    subtasksSection.classList.add('expanded');
+    subtasksAddRow.style.display = 'flex';
+    subtasksNewInput.focus();
+  });
+
+  function addSubtask() {
+    const name = subtasksNewInput.value.trim();
+    if (!name) { subtasksNewInput.focus(); return; }
+    const minutes = Math.max(1, parseFloat(subtasksNewMinInput.value) || 25);
+    rowSubtasks.push({ name, minutes, done: false, secLeft: minutes * 60 });
+    subtasksNewInput.value = '';
+    subtasksSection.classList.add('expanded');
+    subtasksAddRow.style.display = 'flex';
+    renderAllSubtasks();
+    commitSubtasks();
+    subtasksNewInput.focus();
+  }
+
+  subtasksNewAddBtn.addEventListener('click', addSubtask);
+  subtasksNewInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addSubtask(); }
+    if (e.key === 'Escape') subtasksNewInput.value = '';
+  });
+
+    // ── TAGS ────────────────────────────────────────────────────────────────────
 
   const renderTags = () => {
     tagsChips.innerHTML='';
@@ -1634,22 +2412,37 @@ function addNewRow(defaults={}) {
 
   goalInp.oninput=()=>{
     if(timerId){clearInterval(timerId);timerId=null;}
-    goalMinutes=parseFloat(goalInp.value)||1; row.dataset.goal=goalMinutes;
-    totalSeconds=goalMinutes*60; secondsLeft=totalSeconds;
-    startBtn.textContent='START'; startBtn.className='btn start';
+    goalMinutes=Math.max(1, parseFloat(goalInp.value)||1);
+    row.dataset.goal=goalMinutes;
+    totalSeconds=Math.round(goalMinutes*60); secondsLeft=totalSeconds;
+    startBtn.textContent='▶'; startBtn.className='btn start';
     row.classList.remove('done','flash'); updateUI(); saveRows(); updateDayProgress();
   };
 
   startBtn.onclick=()=>{
-    if(timerId){ clearInterval(timerId);timerId=null; startBtn.textContent='RESUME'; startBtn.className='btn'; }
-    else {
+    if(timerId){
+      // Pause main — also pause all running subtasks
+      clearInterval(timerId); timerId=null;
+      startBtn.textContent='▶'; startBtn.className='btn';
+      // Pause every running subtask
+      subtasksList.querySelectorAll('.sub-start').forEach((b,i) => {
+        if(b.textContent==='⏸'){
+          b.textContent='▶';
+          const subIdx = parseInt(b.closest('.subtask-row') ? [...subtasksList.children].indexOf(b.closest('.subtask-row')) : -1);
+          if(subTimers[subIdx]){ clearInterval(subTimers[subIdx]); delete subTimers[subIdx]; }
+          // update display
+          const timerDiv = b.closest('.subtask-actions').previousElementSibling;
+          if(timerDiv) timerDiv.classList.remove('running');
+        }
+      });
+    } else {
       if(secondsLeft===0)return;
-      startBtn.textContent='PAUSE'; startBtn.className='btn start';
+      startBtn.textContent='⏸'; startBtn.className='btn start';
       timerId=setInterval(()=>{
         if(secondsLeft>0){ secondsLeft--; updateUI(); }
         else {
           clearInterval(timerId);timerId=null;
-          startBtn.textContent='DONE ✓'; startBtn.className='btn';
+          startBtn.textContent='✓'; startBtn.className='btn';
           progBg.style.width='100%'; pctText.textContent='100%';
           nameLightDiv.style.clipPath='inset(0 0% 0 0)';
           row.classList.add('done');
@@ -1669,17 +2462,222 @@ function addNewRow(defaults={}) {
     const delta=e.detail*60;
     secondsLeft=Math.max(1,secondsLeft+delta); totalSeconds=Math.max(1,totalSeconds+delta);
     goalMinutes=totalSeconds/60; row.dataset.goal=goalMinutes; goalInp.value=goalMinutes;
-    if(row.classList.contains('done')&&delta>0){ row.classList.remove('done'); startBtn.textContent='START'; startBtn.className='btn start'; }
+    if(row.classList.contains('done')&&delta>0){ row.classList.remove('done'); startBtn.textContent='▶'; startBtn.className='btn start'; }
     updateUI(); saveRows();
   });
 
   tbody.appendChild(row); updateUI(); updatePlannedTime();
 }
 
-function fmt(s){ return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; }
+function fmt(s){
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
 
 // Expose to window so inline onclick attributes can reach them inside DOMContentLoaded
-window.toggleSettings = btn => btn.closest('tr').querySelector('.btn-settings-row').classList.toggle('active');
+// toggleSettings replaced by openRowPopup popup system
+
+// ── ROW SETTINGS POPUP ────────────────────────────────────────────────────────
+(function() {
+  let currentPopup = null;
+  let currentRow   = null;
+
+  function closePopup() {
+    if (currentPopup) { currentPopup.remove(); currentPopup = null; currentRow = null; }
+  }
+
+  window.openRowPopup = function(btn) {
+    // Close any existing popup first
+    closePopup();
+
+    const row = btn.closest('tr');
+    const prioSel   = row.querySelector('.priority-select');
+    const goalInp   = row.querySelector('.goal-input');
+    const tagsChips = row.querySelector('.tags-chips');
+    const tagInput  = row.querySelector('.tag-input');
+    const prioPill  = row.querySelector('.prio-pill');
+    let rowTags = JSON.parse(row.dataset.tags || '[]');
+
+    const popup = document.createElement('div');
+    popup.className = 'row-popup open';
+    popup.innerHTML = `
+      <div class="row-popup-header">
+        <span>Task Settings</span>
+        <button class="row-popup-close">✕</button>
+      </div>
+      <div class="row-popup-section">
+        <div class="row-popup-label">Priority</div>
+        <div class="row-popup-row">
+          <button class="prio-btn${prioSel.value==='high'?' active-high':''}" data-prio="high">▲ High</button>
+          <button class="prio-btn${prioSel.value==='med'?' active-med':''}"  data-prio="med">● Med</button>
+          <button class="prio-btn${prioSel.value==='low'?' active-low':''}"  data-prio="low">▼ Low</button>
+        </div>
+      </div>
+      <div class="row-popup-section">
+        <div class="row-popup-label">Start Time (Time Block)</div>
+        <div class="row-popup-row">
+          <input type="time" class="popup-goal-input popup-start-time" value="${row.dataset.startTime||''}" style="width:120px;flex:none;">
+          <button class="btn min-btn popup-clear-time" style="font-size:0.55rem;padding:4px 8px;height:28px;margin-left:4px;">✕ Clear</button>
+        </div>
+      </div>
+      <div class="row-popup-section">
+        <div class="row-popup-label">Goal Time</div>
+        <div class="row-popup-row">
+          <button class="btn min-btn popup-adj" data-delta="-5">−5m</button>
+          <button class="btn min-btn popup-adj" data-delta="-1">−1m</button>
+          <input type="number" class="popup-goal-input" value="${goalInp.value}" min="1" step="1" max="9999">
+          <button class="btn min-btn popup-adj" data-delta="1">+1m</button>
+          <button class="btn min-btn popup-adj" data-delta="5">+5m</button>
+          <span class="popup-goal-unit">min</span>
+        </div>
+      </div>
+      <div class="row-popup-section">
+        <div class="row-popup-label">Tags</div>
+        <div class="popup-tag-chips"></div>
+        <input type="text" class="popup-tag-input" placeholder="Type tag + Enter…">
+      </div>
+      <div class="row-popup-section">
+        <div class="popup-danger-row">
+          <button class="btn" style="flex:1;font-size:0.58rem;" data-action="reset">↺ Reset Timer</button>
+          <button class="btn danger" style="flex:1;font-size:0.58rem;" data-action="delete">× Delete</button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(popup);
+    currentPopup = popup;
+    currentRow   = row;
+
+    // Position popup near the button
+    function positionPopup() {
+      const btnRect = btn.getBoundingClientRect();
+      const pw = popup.offsetWidth || 240;
+      const ph = popup.offsetHeight || 280;
+      let left = btnRect.right - pw;
+      let top  = btnRect.bottom + 4;
+      if (left < 4) left = 4;
+      if (top + ph > window.innerHeight - 8) top = btnRect.top - ph - 4;
+      popup.style.left = left + 'px';
+      popup.style.top  = top  + 'px';
+    }
+    // Position after paint so offsetWidth is known
+    requestAnimationFrame(() => { requestAnimationFrame(positionPopup); });
+
+    // ── Priority buttons ──
+    popup.querySelectorAll('.prio-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        const prio = b.dataset.prio;
+        prioSel.value = prio;
+        prioSel.className = 'priority-select ' + prio;
+        if (prioPill) { prioPill.className = 'prio-pill ' + prio; prioPill.textContent = prio.toUpperCase(); }
+        popup.querySelectorAll('.prio-btn').forEach(x => x.className = 'prio-btn');
+        b.classList.add('active-' + prio);
+        saveRows();
+      });
+    });
+
+    // ── Start time (time blocking) ──
+    const popupStartTime = popup.querySelector('.popup-start-time');
+    popupStartTime.addEventListener('change', () => {
+      row.dataset.startTime = popupStartTime.value;
+      const startSpan = row.querySelector('.time-block-start');
+      const pill = row.querySelector('.time-block-pill');
+      if (startSpan) startSpan.textContent = popupStartTime.value;
+      if (pill) pill.classList.toggle('has-time', !!popupStartTime.value);
+      saveRows();
+    });
+    popup.querySelector('.popup-clear-time').addEventListener('click', () => {
+      row.dataset.startTime = '';
+      popupStartTime.value = '';
+      const startSpan = row.querySelector('.time-block-start');
+      const pill = row.querySelector('.time-block-pill');
+      if (startSpan) startSpan.textContent = '';
+      if (pill) pill.classList.remove('has-time');
+      saveRows();
+    });
+
+    // ── Goal time adj ──
+    const popupGoalInp = popup.querySelector('.popup-goal-input');
+    popup.querySelectorAll('.popup-adj').forEach(b => {
+      b.addEventListener('click', () => {
+        const delta = parseInt(b.dataset.delta);
+        const newVal = Math.max(1, (parseFloat(popupGoalInp.value) || 1) + delta);
+        popupGoalInp.value = newVal;
+        popupGoalInp.dispatchEvent(new Event('input'));
+      });
+    });
+    popupGoalInp.addEventListener('input', () => {
+      goalInp.value = popupGoalInp.value;
+      goalInp.dispatchEvent(new Event('input'));
+    });
+
+    // ── Tags ──
+    function renderPopupTags() {
+      const chipsEl = popup.querySelector('.popup-tag-chips');
+      chipsEl.innerHTML = '';
+      rowTags.forEach((t, i) => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip';
+        chip.innerHTML = t + '<span class="tag-remove" style="cursor:pointer;margin-left:3px;opacity:0.6;">×</span>';
+        chip.querySelector('.tag-remove').addEventListener('click', () => {
+          rowTags.splice(i, 1);
+          row.dataset.tags = JSON.stringify(rowTags);
+          saveRows();
+          renderPopupTags();
+        });
+        chipsEl.appendChild(chip);
+      });
+    }
+    renderPopupTags();
+
+    const popupTagInput = popup.querySelector('.popup-tag-input');
+    popupTagInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault();
+        const val = popupTagInput.value.trim().toLowerCase().replace(',','');
+        if (val && !rowTags.includes(val)) {
+          rowTags.push(val);
+          row.dataset.tags = JSON.stringify(rowTags);
+          saveRows();
+          renderPopupTags();
+        }
+        popupTagInput.value = '';
+      }
+      if (e.key === 'Backspace' && !popupTagInput.value && rowTags.length) {
+        rowTags.pop();
+        row.dataset.tags = JSON.stringify(rowTags);
+        saveRows();
+        renderPopupTags();
+      }
+    });
+
+    // ── Actions ──
+    popup.querySelector('[data-action="reset"]').addEventListener('click', () => {
+      row.querySelector('.goal-input').dispatchEvent(new Event('input'));
+      closePopup();
+    });
+    popup.querySelector('[data-action="delete"]').addEventListener('click', () => {
+      closePopup();
+      row.remove(); saveRows(); updatePlannedTime();
+    });
+    popup.querySelector('.row-popup-close').addEventListener('click', closePopup);
+  };
+
+  // Close on outside click
+  document.addEventListener('mousedown', e => {
+    if (currentPopup && !currentPopup.contains(e.target) && !e.target.matches('[onclick*="openRowPopup"]')) {
+      closePopup();
+    }
+  });
+  // Close on Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && currentPopup) closePopup();
+  });
+})();
+
 window.resetRow       = btn => btn.closest('tr').querySelector('.goal-input').dispatchEvent(new Event('input'));
 window.adjustTime     = (btn,d) => btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d}));
 window.removeRow      = btn => { btn.closest('tr').remove(); saveRows(); updatePlannedTime(); };
@@ -1710,7 +2708,8 @@ document.getElementById('clearDoneBtn').addEventListener('click', () => {
   const panelDefs = [
     { id: 'goals',      sourceId: 'drawer-goals-source' },
     { id: 'templates',  sourceId: 'drawer-templates-source' },
-    { id: 'saved-days', sourceId: 'drawer-saved-days-source' }
+    { id: 'saved-days', sourceId: 'drawer-saved-days-source' },
+    { id: 'data',       sourceId: 'drawer-data-source' }
   ];
   panelDefs.forEach(def => {
     const src = document.getElementById(def.sourceId);
@@ -1777,8 +2776,8 @@ document.getElementById('clearDoneBtn').addEventListener('click', () => {
     // Update drawer tab labels with counts
     document.querySelectorAll('.drawer-tab-btn').forEach(btn => {
       const tab = btn.dataset.drawerTab;
-      const counts = { 'goals': gCount, 'templates': tCount, 'saved-days': sCount };
-      const labels = { 'goals': 'Goals', 'templates': 'Templates', 'saved-days': 'Saved' };
+      const counts = { 'goals': gCount, 'templates': tCount, 'saved-days': sCount, 'data': 0 };
+      const labels = { 'goals': 'Goals', 'templates': 'Templates', 'saved-days': 'Saved', 'data': 'Data' };
       const c = counts[tab] || 0;
       btn.textContent = c > 0 ? `${labels[tab]} (${c})` : labels[tab];
     });
@@ -1844,14 +2843,18 @@ document.getElementById('clearDoneBtn').addEventListener('click', () => {
 })();
 
 // ── BACKUP / RESTORE ─────────────────────────────────────────────────────────
-document.getElementById('backupBtn').onclick=()=>{
+// Backup function
+function triggerBackup() {
   const data={ pomo_stats:stats, pomo_history:sessionLog, pomo_rows:JSON.parse(localStorage.getItem('pomo_rows')||'[]'), pomo_goals:goals, pomo_theme:localStorage.getItem('pomo_theme')||'brutalist', pomo_prog_color:progColor, pomo_day_name:dayNameInput.value, pomo_saved_days:savedDays, pomo_templates:templates, exported:new Date().toISOString() };
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
   a.download=`focus-backup-${new Date().toISOString().slice(0,10)}.json`; a.click();
-};
-document.getElementById('restoreBtn').onclick=()=>document.getElementById('restoreFile').click();
-document.getElementById('restoreFile').onchange=e=>{
+}
+// Restore handler
+function triggerRestore() {
+  document.getElementById('restoreFile2') ? document.getElementById('restoreFile2').click() : alert('No restore input found');
+}
+function handleRestoreFile(e) {
   const file=e.target.files[0]; if(!file)return;
   const reader=new FileReader();
   reader.onload=ev=>{
@@ -1875,7 +2878,8 @@ document.getElementById('restoreFile').onchange=e=>{
     e.target.value='';
   };
   reader.readAsText(file);
-};
+}
+document.getElementById('restoreFile2') && document.getElementById('restoreFile2').addEventListener('change', handleRestoreFile);
 
 // ── TEMPLATES ─────────────────────────────────────────────────────────────────
 function saveTemplates() { localStorage.setItem('pomo_templates', JSON.stringify(templates)); }
@@ -1883,11 +2887,16 @@ function saveTemplates() { localStorage.setItem('pomo_templates', JSON.stringify
 function getCurrentRows() {
   const rows = [];
   document.querySelectorAll('.task-row').forEach(row => {
+    const subs = (rowSubtaskRegistry.get(row) || []).map(s => ({
+      name: s.name, minutes: s.minutes, done: false, secLeft: s.minutes * 60
+    }));
     rows.push({
       name: row.querySelector('.activity-input').value || '',
       priority: row.querySelector('.priority-select').value || 'med',
       goalMinutes: parseFloat(row.dataset.goal) || 25,
-      tags: JSON.parse(row.dataset.tags || '[]')
+      tags: JSON.parse(row.dataset.tags || '[]'),
+      startTime: row.dataset.startTime || '',
+      subtasks: subs
     });
   });
   return rows;
@@ -1909,26 +2918,39 @@ function renderTemplates() {
 
     const rowsPreviewHtml = (tpl.rows || []).map(r => {
       const tagsHtml = (r.tags||[]).map(t=>`<span class="trp-tag">${t}</span>`).join('');
+      const subCount = (r.subtasks||[]).length;
+      const subDone  = (r.subtasks||[]).filter(s=>s.done).length;
+      const subHtml  = subCount ? `<span class="trp-tag" style="opacity:0.7;">⊞ ${subDone}/${subCount} sub</span>` : '';
       return `<div class="template-row-preview">
+        <div class="template-row-priority-bar ${r.priority||'med'}"></div>
         <span class="trp-name">${r.name || '<em style="opacity:.4">Untitled</em>'}</span>
         <span class="trp-time">${r.goalMinutes}m</span>
         <span class="trp-prio ${r.priority||'med'}">${r.priority||'med'}</span>
         ${tagsHtml ? `<span class="trp-tags">${tagsHtml}</span>` : ''}
+        ${subHtml}
       </div>`;
     }).join('');
+
+    const totalMins = (tpl.rows||[]).reduce((s,r)=>s+(r.goalMinutes||0),0);
+    const statsHtml = `<div class="template-stats-bar">
+      <div class="template-stat"><strong>${tpl.rows.length}</strong>Activities</div>
+      <div class="template-stat"><strong>${fmtMins(totalMins)}</strong>Total</div>
+      <div class="template-stat"><strong>${(tpl.rows||[]).filter(r=>(r.subtasks||[]).length>0).length}</strong>Has Sub-tasks</div>
+      <div class="template-stat" style="margin-left:auto;font-size:0.55rem;align-self:center;">${tpl.created}</div>
+    </div>`;
 
     item.innerHTML = `
       <div class="template-item-header">
         <span class="template-expand-icon">▶</span>
         <span class="template-item-name">${tpl.name}</span>
-        <span class="template-item-meta">${tpl.rows.length} activit${tpl.rows.length===1?'y':'ies'} · ${tpl.created}</span>
+        <span class="template-item-meta">${tpl.rows.length} activit${tpl.rows.length===1?'y':'ies'}</span>
         <div class="template-item-actions">
           <button class="template-action-btn load" data-load="${tpl.id}">⬆ Load</button>
           <button class="template-action-btn" data-dupe="${tpl.id}">⧉ Dupe</button>
           <button class="template-action-btn danger" data-del="${tpl.id}">× Del</button>
         </div>
       </div>
-      <div class="template-rows-preview">${rowsPreviewHtml || '<div style="padding:12px 32px;font-size:0.7rem;color:var(--text-muted)">No activities in this template.</div>'}</div>`;
+      <div class="template-rows-preview">${rowsPreviewHtml || '<div style="padding:12px 32px;font-size:0.7rem;color:var(--text-muted)">No activities in this template.</div>'}${statsHtml}</div>`;
 
     // Expand/collapse
     item.querySelector('.template-item-header').addEventListener('click', e => {
@@ -2208,6 +3230,117 @@ document.getElementById('finishBackupBtn').onclick = () => {
   a.click();
 };
 
+// ── FOCUS LOCK ────────────────────────────────────────────────────────────────
+(function() {
+  const overlay    = document.getElementById('focusLockOverlay');
+  const lockBtn    = document.getElementById('focusLockBtn');
+  const closeBtn   = document.getElementById('focusLockClose');
+  const closeBtnAlt= document.getElementById('flCloseBtn');
+  const flName     = document.getElementById('flName');
+  const flTimer    = document.getElementById('flTimer');
+  const flProgress = document.getElementById('flProgress');
+  const flSubtasks = document.getElementById('flSubtasks');
+  const flPauseBtn = document.getElementById('flPauseBtn');
+  let watchInterval = null;
+  let lockedRow = null;
+
+  function openFocusLock() {
+    // Find running row first, else first non-done row
+    let target = null;
+    document.querySelectorAll('.task-row').forEach(row => {
+      const btn = row.querySelector('.btn.start');
+      if (!target && btn && btn.textContent === 'PAUSE') target = row;
+    });
+    if (!target) {
+      document.querySelectorAll('.task-row').forEach(row => {
+        if (!target && !row.classList.contains('done')) target = row;
+      });
+    }
+    if (!target) { showToast('No active task to focus on', 'warn'); return; }
+    lockedRow = target;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    syncFocusLock();
+    watchInterval = setInterval(syncFocusLock, 500);
+  }
+
+  function closeFocusLock() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    if (watchInterval) { clearInterval(watchInterval); watchInterval = null; }
+    lockedRow = null;
+  }
+
+  function syncFocusLock() {
+    if (!lockedRow) return;
+    const nameInp  = lockedRow.querySelector('.activity-input');
+    const timeCell = lockedRow.querySelector('.time-cell');
+    const pctEl    = lockedRow.querySelector('.pct-text');
+    const startBtn = lockedRow.querySelector('[data-role="start-btn"]');
+    flName.textContent  = (nameInp && nameInp.value) || 'Untitled';
+    flTimer.textContent = timeCell ? timeCell.textContent : '0:00';
+    const pct = pctEl ? parseInt(pctEl.textContent) || 0 : 0;
+    flProgress.style.width = pct + '%';
+    const isUrgent = timeCell && timeCell.classList.contains('urgent');
+    flTimer.classList.toggle('urgent', isUrgent);
+    const running = startBtn && startBtn.textContent === '⏸';
+    flPauseBtn.textContent = running ? '⏸' : '▶';
+    // Subtasks
+    const subs = rowSubtaskRegistry.get(lockedRow) || [];
+    flSubtasks.innerHTML = '';
+    subs.forEach(s => {
+      const d = document.createElement('div');
+      d.className = 'focus-lock-sub' + (s.done ? ' done-sub' : '');
+      d.innerHTML = '<span>' + (s.name||'Sub-task') + '</span><span class="focus-lock-sub-timer">' + fmt(s.secLeft !== undefined ? s.secLeft : s.minutes*60) + '</span>';
+      flSubtasks.appendChild(d);
+    });
+  }
+
+  lockBtn.addEventListener('click', openFocusLock);
+  [closeBtn, closeBtnAlt].forEach(b => b && b.addEventListener('click', closeFocusLock));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeFocusLock();
+  });
+  flPauseBtn.addEventListener('click', () => {
+    if (!lockedRow) return;
+    lockedRow.querySelector('[data-role="start-btn"]').click();
+    syncFocusLock();
+  });
+})();
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+function triggerCsvExport() {
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lines = [];
+
+  lines.push('=== CURRENT BOARD ===');
+  lines.push(['Activity','Goal (min)','Priority','Tags','Start Time','Done','Sub-tasks'].map(esc).join(','));
+  document.querySelectorAll('.task-row').forEach(row => {
+    const name  = row.querySelector('.activity-input').value || '';
+    const goal  = row.dataset.goal || '';
+    const prio  = (row.querySelector('.priority-select') || {}).value || '';
+    const tags  = JSON.parse(row.dataset.tags || '[]').join('; ');
+    const start = row.dataset.startTime || '';
+    const done  = row.classList.contains('done') ? 'Yes' : 'No';
+    const subs  = (rowSubtaskRegistry.get(row) || []).map(s => s.name).join('; ');
+    lines.push([name, goal, prio, tags, start, done, subs].map(esc).join(','));
+  });
+
+  lines.push('');
+  lines.push('=== SESSION HISTORY ===');
+  lines.push(['Activity','Minutes','Tags','Time'].map(esc).join(','));
+  sessionLog.forEach(h => {
+    lines.push([h.name, h.minutes, (h.tags||[]).join('; '), h.time].map(esc).join(','));
+  });
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'focus-export-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV exported ✓', 'success');
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 saveStats(); renderHistory(); renderGoals(); renderSavedDays(); renderTemplates(); applyHistoryCollapse();
 if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
@@ -2216,6 +3349,8 @@ else addNewRow();
 setTimeout(() => {
   if (window.updateDrawerBadge) window.updateDrawerBadge();
   updatePlannedTime();
+  // init time blocking display
+  document.querySelectorAll('.task-row').forEach(r => { const p = r.querySelector('.time-block-pill'); if(p) p.classList.toggle('has-time', !!r.dataset.startTime); });
   // First-run tip
   if (!localStorage.getItem('pomo_seen_tip')) {
     setTimeout(() => {
@@ -2225,7 +3360,62 @@ setTimeout(() => {
   }
 }, 100);
 
+// ── MOBILE BOTTOM BAR WIRING ────────────────────────────────────────────────
+(function() {
+  const mbAdd     = document.getElementById('mbAddBtn');
+  const mbFocus   = document.getElementById('mbFocusBtn');
+  const mbFinish  = document.getElementById('mbFinishBtn');
+  const mbDrawer  = document.getElementById('mbDrawerBtn');
+  const mbSettings= document.getElementById('mbSettingsBtn');
+  if (!mbAdd) return;
+  mbAdd.addEventListener('click', () => { addNewRow(); window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'}); });
+  mbFocus.addEventListener('click', () => document.getElementById('focusLockBtn').click());
+  mbFinish.addEventListener('click', () => document.getElementById('finishDayBtn').click());
+  mbDrawer.addEventListener('click', () => document.getElementById('drawerOpenBtn').click());
+  mbSettings.addEventListener('click', () => document.getElementById('settingsBtn').click());
+})();
+
 }); // end DOMContentLoaded
 </script>
+
+<!-- ── MOBILE BOTTOM BAR ───────────────────────────────────────────────────── -->
+<div class="mobile-bar" id="mobileBar">
+  <button class="mobile-bar-btn" id="mbAddBtn">
+    <span class="mobile-bar-icon">＋</span>
+    <span class="mobile-bar-label">Add</span>
+  </button>
+  <button class="mobile-bar-btn" id="mbFocusBtn">
+    <span class="mobile-bar-icon">⊙</span>
+    <span class="mobile-bar-label">Focus</span>
+  </button>
+  <button class="mobile-bar-btn" id="mbFinishBtn">
+    <span class="mobile-bar-icon">🏁</span>
+    <span class="mobile-bar-label">Finish</span>
+  </button>
+  <button class="mobile-bar-btn" id="mbDrawerBtn">
+    <span class="mobile-bar-icon">☰</span>
+    <span class="mobile-bar-label">Tools</span>
+  </button>
+  <button class="mobile-bar-btn" id="mbSettingsBtn">
+    <span class="mobile-bar-icon">⚙</span>
+    <span class="mobile-bar-label">Settings</span>
+  </button>
+</div>
+
+<!-- ── FOCUS LOCK OVERLAY ────────────────────────────────────────────────── -->
+<div class="focus-lock-overlay" id="focusLockOverlay">
+  <button class="focus-lock-unlock" id="focusLockClose" title="Exit Focus (Esc)">✕</button>
+  <div class="focus-lock-inner">
+    <div class="focus-lock-label">Now Focusing</div>
+    <div class="focus-lock-name" id="flName">—</div>
+    <div class="focus-lock-timer" id="flTimer">0:00</div>
+    <div class="focus-lock-progress"><div class="focus-lock-progress-fill" id="flProgress" style="width:0%"></div></div>
+    <div class="focus-lock-subtasks" id="flSubtasks"></div>
+    <div class="focus-lock-actions">
+      <button class="focus-lock-btn" id="flPauseBtn" title="Pause / Resume">⏸</button>
+      <button class="focus-lock-btn primary" id="flCloseBtn" title="Exit Focus">✕</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
