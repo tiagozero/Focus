@@ -1882,43 +1882,6 @@
 
       <div class="divider"></div>
 
-      <!-- View -->
-      <div class="settings-section">
-        <div class="settings-label">View</div>
-        <div class="view-switcher" id="viewSwitcher" title="Switch view" style="display:inline-flex;">
-          <button class="view-btn active" data-view="table" title="Table view"><span class="view-icon">☰</span> Table</button>
-          <button class="view-btn" data-view="timeline" title="Timeline view"><span class="view-icon">◫</span> Timeline</button>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Achievements -->
-      <div class="settings-section">
-        <div class="settings-label">Achievements</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <button class="icon-btn" id="toggleAchievementsBtn" style="font-size:0.58rem;height:32px;">🏅 Show Achievements</button>
-          <span id="achToggleHint" style="font-size:0.55rem;color:var(--text-muted);font-style:italic;">Hidden by default</span>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Keyboard Shortcuts -->
-      <div class="settings-section">
-        <div class="settings-label">Keyboard Shortcuts</div>
-        <div class="kbd-hints" id="kbdHints" style="max-width:100%;margin:0;padding:4px 0;display:flex;flex-wrap:wrap;gap:12px;">
-          <span class="kbd-hint"><kbd>/</kbd> Search</span>
-          <span class="kbd-hint"><kbd>N</kbd> New</span>
-          <span class="kbd-hint"><kbd>G</kbd> Goals</span>
-          <span class="kbd-hint"><kbd>T</kbd> Templates</span>
-          <span class="kbd-hint"><kbd>S</kbd> Saved</span>
-          <span class="kbd-hint"><kbd>Esc</kbd> Close</span>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
       <!-- Danger zone -->
       <div class="settings-section">
         <div class="settings-label">Data</div>
@@ -1989,6 +1952,10 @@
     <button class="icon-btn" id="finishDayBtn" style="background:var(--accent);border-color:var(--accent);color:#fff;">🏁 Finish Day</button>
     <button class="icon-btn" id="focusLockBtn">⊙ Focus</button>
     <button class="icon-btn" id="historyToggleBtn">◷ History</button>
+    <div class="view-switcher" id="viewSwitcher" title="Switch view">
+      <button class="view-btn active" data-view="table" title="Table view"><span class="view-icon">☰</span> Table</button>
+      <button class="view-btn" data-view="timeline" title="Timeline view"><span class="view-icon">◫</span> Timeline</button>
+    </div>
     <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
     <div class="hamburger-wrap">
       <button class="hamburger-btn" id="drawerOpenBtn" title="Goals (G) · Templates (T) · Saved Days (S)">
@@ -2018,7 +1985,7 @@
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- Daily Achievements -->
-<div class="achievements-bar" id="achievementsBar" style="display:none"></div>
+<div class="achievements-bar" id="achievementsBar"></div>
 
 <!-- Day progress bar -->
 <div class="day-progress-wrap" id="dayProgressWrap">
@@ -2032,6 +1999,15 @@
   <input type="text" class="search-input" id="searchInput" placeholder="Search activities...">
   <button class="search-clear" id="searchClear">✕</button>
 </div>
+<div class="kbd-hints" id="kbdHints">
+  <span class="kbd-hint"><kbd>/</kbd> Search</span>
+  <span class="kbd-hint"><kbd>N</kbd> New</span>
+  <span class="kbd-hint"><kbd>G</kbd> Goals</span>
+  <span class="kbd-hint"><kbd>T</kbd> Templates</span>
+  <span class="kbd-hint"><kbd>S</kbd> Saved</span>
+  <span class="kbd-hint"><kbd>Esc</kbd> Close</span>
+</div>
+
 <!-- MAIN: ACTIVITIES -->
 <div class="tab-panel active" id="tab-activities">
   <div class="container">
@@ -2273,29 +2249,6 @@ settingsBtn.addEventListener('click', () => overlay.classList.add('open'));
 closeBtn.addEventListener('click',    () => overlay.classList.remove('open'));
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
 
-// ── ACHIEVEMENTS TOGGLE ────────────────────────────────────────────────────────
-(function() {
-  const bar     = document.getElementById('achievementsBar');
-  const btn     = document.getElementById('toggleAchievementsBtn');
-  const hint    = document.getElementById('achToggleHint');
-  let visible   = localStorage.getItem('pomo_ach_visible') === 'true'; // hidden by default
-
-  function applyAchVisibility() {
-    bar.style.display  = visible ? '' : 'none';
-    btn.textContent    = visible ? '🏅 Hide Achievements' : '🏅 Show Achievements';
-    hint.textContent   = visible ? 'Currently visible' : 'Currently hidden';
-    if (visible) renderAchievements();
-  }
-
-  btn.addEventListener('click', () => {
-    visible = !visible;
-    localStorage.setItem('pomo_ach_visible', visible);
-    applyAchVisibility();
-  });
-
-  applyAchVisibility();
-})();
-
 // Theme swatches — sanitize stored theme (old versions used 'light'/'dark')
 const VALID_THEMES = ['brutalist','midnight','paper','forest','neon'];
 let storedTheme = localStorage.getItem('pomo_theme') || 'brutalist';
@@ -2454,7 +2407,7 @@ let _prevUnlocked = new Set();
 
 function renderAchievements() {
   const bar = document.getElementById('achievementsBar');
-  if (!bar || bar.style.display === 'none') return;
+  if (!bar) return;
   bar.innerHTML = '';
   ACHIEVEMENTS.forEach(ach => {
     const unlocked = ach.check(stats);
@@ -4542,12 +4495,7 @@ function triggerCsvExport() {
   }
 
   document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      applyView(btn.dataset.view);
-      // Close settings modal when switching view
-      const settingsOverlay = document.getElementById('settingsOverlay');
-      if (settingsOverlay) settingsOverlay.classList.remove('open');
-    });
+    btn.addEventListener('click', () => applyView(btn.dataset.view));
   });
 
   // ── Return subtask sections to their source rows before rebuild ───────────
