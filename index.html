@@ -432,7 +432,7 @@
   }
   .activity-input {
     position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    width: 100%; height: 100%; border: none; padding: 0 12px 0 68px;
+    width: 100%; height: 100%; border: none; padding: 0 178px 0 68px;
     font-family: var(--font-body); font-size: 0.85rem;
     background: transparent; outline: none; z-index: 6;
     color: transparent; caret-color: var(--text); text-align: center;
@@ -441,7 +441,7 @@
   .name-dark, .name-light {
     position: absolute; left: 0; top: 0; right: 0; bottom: 0;
     display: flex; align-items: center; justify-content: center;
-    padding-left: 68px; padding-right: 12px;
+    padding-left: 68px; padding-right: 178px;
     font-family: var(--font-body); font-size: 0.85rem;
     white-space: nowrap; overflow: hidden;
   }
@@ -1420,6 +1420,41 @@
 
   /* ── SUB-TASKS ──────────────────────────────────────────────────────────────── */
   .subtasks-section {
+    border-top: 1px dashed var(--border);
+    background: var(--surface2);
+  }
+
+  /* Subtask tag chips */
+  .subtask-tags-row {
+    display: flex; flex-wrap: wrap; gap: 3px; align-items: center;
+    padding: 3px 10px 4px 32px;
+    border-top: 1px dashed var(--border);
+    background: var(--surface2);
+  }
+  .subtask-tag-chip {
+    display: inline-flex; align-items: center; gap: 2px;
+    padding: 1px 6px; border: 1px solid var(--border);
+    font-size: 0.5rem; font-family: var(--font-body);
+    text-transform: uppercase; letter-spacing: 1px;
+    background: var(--bg); color: var(--text-muted);
+  }
+  .subtask-tag-remove {
+    cursor: pointer; opacity: 0.5; font-size: 0.65rem;
+    line-height: 1; margin-left: 1px; transition: opacity 0.15s;
+  }
+  .subtask-tag-remove:hover { opacity: 1; color: var(--tag-high); }
+  .subtask-tag-input {
+    border: none; background: transparent; color: var(--text);
+    font-family: var(--font-body); font-size: 0.55rem;
+    outline: none; min-width: 80px; padding: 1px 4px;
+    text-transform: lowercase; letter-spacing: 0.5px;
+  }
+  .subtask-tag-input::placeholder { color: var(--text-muted); opacity: 0.4; font-style: italic; }
+
+  /* Modal subtask tag row */
+  .subtask-modal-tags-row {
+    display: flex; flex-wrap: wrap; gap: 3px; align-items: center;
+    padding: 4px 12px 5px 38px;
     border-top: 1px dashed var(--border);
     background: var(--surface2);
   }
@@ -2415,7 +2450,7 @@ function saveRows() {
       tags: JSON.parse(row.dataset.tags || '[]'),
       startTime: row.dataset.startTime || '',
       subtasks: (rowSubtaskRegistry.get(row) || []).map(s => ({
-        name: s.name, minutes: s.minutes, done: s.done, secLeft: s.secLeft
+        name: s.name, minutes: s.minutes, done: s.done, secLeft: s.secLeft, tags: s.tags || []
       }))
     });
   });
@@ -2760,7 +2795,51 @@ function addNewRow(defaults={}) {
       el.appendChild(minInp);
       el.appendChild(timerEl);
       el.appendChild(actions);
+
+      // ── Tags row below the subtask ────────────────────────────────────
+      const tagsRow = document.createElement('div');
+      tagsRow.className = 'subtask-tags-row';
+      if (!sub.tags) sub.tags = [];
+
+      function renderSubTags() {
+        tagsRow.innerHTML = '';
+        sub.tags.forEach((t, ti) => {
+          const chip = document.createElement('span');
+          chip.className = 'subtask-tag-chip';
+          chip.innerHTML = `${t}<span class="subtask-tag-remove" data-ti="${ti}">×</span>`;
+          chip.querySelector('.subtask-tag-remove').addEventListener('click', () => {
+            sub.tags.splice(ti, 1);
+            saveRows();
+            renderSubTags();
+          });
+          tagsRow.appendChild(chip);
+        });
+        const tagInp = document.createElement('input');
+        tagInp.type = 'text';
+        tagInp.className = 'subtask-tag-input';
+        tagInp.placeholder = '+ tag…';
+        tagInp.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const val = tagInp.value.trim().toLowerCase().replace(',', '');
+            if (val && !sub.tags.includes(val)) {
+              sub.tags.push(val);
+              saveRows();
+              renderSubTags();
+            } else { tagInp.value = ''; }
+          }
+          if (e.key === 'Backspace' && !tagInp.value && sub.tags.length) {
+            sub.tags.pop();
+            saveRows();
+            renderSubTags();
+          }
+        });
+        tagsRow.appendChild(tagInp);
+      }
+      renderSubTags();
+
       subtasksList.appendChild(el);
+      subtasksList.appendChild(tagsRow);
 
       function refreshTimer() {
         timerEl.textContent = fmt(secLeft);
@@ -2906,7 +2985,7 @@ function addNewRow(defaults={}) {
     getSubtasks: () => rowSubtasks,
     getSubTimers: () => subTimers,
     addSubtask: (name, minutes) => {
-      rowSubtasks.push({ name, minutes, done: false, secLeft: minutes * 60 });
+      rowSubtasks.push({ name, minutes, done: false, secLeft: minutes * 60, tags: [] });
       renderAllSubtasks();
       commitSubtasks();
     },
@@ -2963,7 +3042,7 @@ function addNewRow(defaults={}) {
     const name = subtasksNewInput.value.trim();
     if (!name) { subtasksNewInput.focus(); return; }
     const minutes = Math.max(1, parseFloat(subtasksNewMinInput.value) || 25);
-    rowSubtasks.push({ name, minutes, done: false, secLeft: minutes * 60 });
+    rowSubtasks.push({ name, minutes, done: false, secLeft: minutes * 60, tags: [] });
     subtasksNewInput.value = '';
     subtasksSection.classList.add('expanded');
     subtasksAddRow.style.display = 'flex';
@@ -3629,7 +3708,51 @@ function fmt(s){
 
       el.appendChild(check); el.appendChild(nameInp);
       el.appendChild(timerEl); el.appendChild(actions);
+
+      // Tags row
+      if (!sub.tags) sub.tags = [];
+      const modalTagsRow = document.createElement('div');
+      modalTagsRow.className = 'subtask-modal-tags-row';
+
+      function renderModalSubTags() {
+        modalTagsRow.innerHTML = '';
+        sub.tags.forEach((t, ti) => {
+          const chip = document.createElement('span');
+          chip.className = 'subtask-tag-chip';
+          chip.innerHTML = `${t}<span class="subtask-tag-remove">×</span>`;
+          chip.querySelector('.subtask-tag-remove').addEventListener('click', () => {
+            sub.tags.splice(ti, 1);
+            saveRows();
+            renderModalSubTags();
+          });
+          modalTagsRow.appendChild(chip);
+        });
+        const tagInp = document.createElement('input');
+        tagInp.type = 'text';
+        tagInp.className = 'subtask-tag-input';
+        tagInp.placeholder = '+ tag…';
+        tagInp.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            const val = tagInp.value.trim().toLowerCase().replace(',', '');
+            if (val && !sub.tags.includes(val)) {
+              sub.tags.push(val);
+              saveRows();
+              renderModalSubTags();
+            } else { tagInp.value = ''; }
+          }
+          if (e.key === 'Backspace' && !tagInp.value && sub.tags.length) {
+            sub.tags.pop();
+            saveRows();
+            renderModalSubTags();
+          }
+        });
+        modalTagsRow.appendChild(tagInp);
+      }
+      renderModalSubTags();
+
       listEl.appendChild(el);
+      listEl.appendChild(modalTagsRow);
     });
   }
 
@@ -4633,6 +4756,45 @@ function triggerCsvExport() {
         item.appendChild(stBtn);
         item.appendChild(delBtn);
         itemsWrap.appendChild(item);
+
+        // Interactive tags row in timeline (always shown, even when empty)
+        const tlTagRow = document.createElement('div');
+        tlTagRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;align-items:center;padding:3px 8px 4px 26px;background:var(--surface2);border-bottom:1px solid var(--border);';
+        if (!sub.tags) sub.tags = [];
+
+        function renderTlTags() {
+          tlTagRow.innerHTML = '';
+          sub.tags.forEach((t, ti) => {
+            const chip = document.createElement('span');
+            chip.className = 'subtask-tag-chip';
+            chip.innerHTML = `${t}<span class="subtask-tag-remove">×</span>`;
+            chip.querySelector('.subtask-tag-remove').addEventListener('click', e => {
+              e.stopPropagation();
+              sub.tags.splice(ti, 1);
+              saveRows();
+              renderTlTags();
+            });
+            tlTagRow.appendChild(chip);
+          });
+          const tagInp = document.createElement('input');
+          tagInp.type = 'text';
+          tagInp.className = 'subtask-tag-input';
+          tagInp.placeholder = '+ tag…';
+          tagInp.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault();
+              const val = tagInp.value.trim().toLowerCase().replace(',', '');
+              if (val && !sub.tags.includes(val)) { sub.tags.push(val); saveRows(); renderTlTags(); }
+              else tagInp.value = '';
+            }
+            if (e.key === 'Backspace' && !tagInp.value && sub.tags.length) {
+              sub.tags.pop(); saveRows(); renderTlTags();
+            }
+          });
+          tlTagRow.appendChild(tagInp);
+        }
+        renderTlTags();
+        itemsWrap.appendChild(tlTagRow);
       });
 
       subList.appendChild(itemsWrap);
