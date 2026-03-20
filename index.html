@@ -2154,19 +2154,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-// ── EXPOSE GLOBALS IMMEDIATELY ────────────────────────────────────────────────
-// function declarations are hoisted within this scope, so these work right away.
-// inline onclick="addNewRow()" etc. need these on window before any click fires.
-window.addNewRow    = function(d)    { return addNewRow(d); };
-window.removeRow    = function(btn)  { btn.closest('tr').remove(); if(typeof saveRows==='function') saveRows(); if(typeof updatePlannedTime==='function') updatePlannedTime(); };
-window.resetRow     = function(btn)  { const gi = btn.closest('tr').querySelector('.goal-input'); if(gi) gi.dispatchEvent(new Event('input')); };
-window.adjustTime   = function(btn,d){ btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d})); };
-window.openRowPopup = function(b, a) { return openRowPopup(b, a); };
-window.addGoal      = function()     { return addGoal(); };
-window.deleteGoal   = function(id)   { return deleteGoal(id); };
-window.clearHistory = function()     { return clearHistory(); };
 // ── STATE ─────────────────────────────────────────────────────────────────────
-const rowSubtaskRegistry = new WeakMap(); // must be first — addNewRow references it
 let stats      = JSON.parse(localStorage.getItem('pomo_stats')   || '{"sessions":0,"minutes":0,"tasks":0}');
 let sessionLog = JSON.parse(localStorage.getItem('pomo_history') || '[]');
 let savedRows  = JSON.parse(localStorage.getItem('pomo_rows')    || '[]');
@@ -2491,6 +2479,10 @@ function renderAchievements() {
     if (unlocked) _prevUnlocked.add(ach.id);
   });
 }
+
+// ── ROW SUBTASK REGISTRY ──────────────────────────────────────────────────────
+// Maps each task-row element to its live subtasks array (avoids dataset encoding issues)
+const rowSubtaskRegistry = new WeakMap();
 
 // ── ROWS ──────────────────────────────────────────────────────────────────────
 function saveRows() {
@@ -2954,14 +2946,6 @@ function addNewRow(defaults={}) {
               saveRows();
               updateSubtasksHeader();
               showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
-              // ── Count toward stats ─────────────────────────────────────
-              stats.tasks++;
-              stats.minutes += Math.round(sub.minutes || 25);
-              saveStats();
-              addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
-              refreshGoalsFromHistory();
-              updateDayProgress();
-              // ──────────────────────────────────────────────────────────
               // If all subtasks done, pause main
               const anyRunning = Object.keys(subTimers).length > 0;
               if (!anyRunning && timerId) {
@@ -2998,7 +2982,6 @@ function addNewRow(defaults={}) {
       // ── Toggle done ──
       check.addEventListener('click', () => {
         stopSubTimer(idx);
-        const wasDone = sub.done;
         sub.done = !sub.done;
         secLeft = sub.done ? 0 : (sub.minutes || 25) * 60;
         sub.secLeft = secLeft;
@@ -3008,16 +2991,6 @@ function addNewRow(defaults={}) {
         refreshTimer();
         saveRows();
         updateSubtasksHeader();
-        // Only count when marking done (not undoing)
-        if (sub.done && !wasDone) {
-          stats.tasks++;
-          stats.minutes += Math.round(sub.minutes || 25);
-          saveStats();
-          addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
-          refreshGoalsFromHistory();
-          updateDayProgress();
-          showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
-        }
       });
 
       // ── Name edit (persist only, no timer sync) ──
@@ -3066,21 +3039,10 @@ function addNewRow(defaults={}) {
     toggleDone: (idx) => {
       const sub = rowSubtasks[idx];
       if (!sub) return;
-      const wasDone = sub.done;
       sub.done = !sub.done;
       if (sub.done) { stopSubTimer(idx); sub.secLeft = 0; }
       renderAllSubtasks();
       commitSubtasks();
-      // Only count when marking done (not undoing)
-      if (sub.done && !wasDone) {
-        stats.tasks++;
-        stats.minutes += Math.round(sub.minutes || 25);
-        saveStats();
-        addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
-        refreshGoalsFromHistory();
-        updateDayProgress();
-        showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
-      }
     },
     deleteSub: (idx) => {
       stopSubTimer(idx);
