@@ -2154,6 +2154,18 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+// ── EXPOSE GLOBALS IMMEDIATELY (needed by inline onclick attributes) ──────────
+// function declarations below are hoisted so wrappers can call them safely.
+window.addNewRow    = function(d)    { return addNewRow(d); };
+window.addGoal      = function()     { return addGoal(); };
+window.deleteGoal   = function(id)   { return deleteGoal(id); };
+window.clearHistory = function()     { return clearHistory(); };
+window.openRowPopup = function(b, a) { return openRowPopup(b, a); };
+// These are defined later as arrow functions — stub now, overwritten below
+window.removeRow    = function(btn)  { btn.closest('tr').remove(); if(typeof saveRows==='function'){saveRows();} if(typeof updatePlannedTime==='function'){updatePlannedTime();} };
+window.resetRow     = function(btn)  { const gi=btn.closest('tr').querySelector('.goal-input'); if(gi) gi.dispatchEvent(new Event('input')); };
+window.adjustTime   = function(btn,d){ btn.closest('tr').dispatchEvent(new CustomEvent('adjustTime',{detail:d})); };
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let stats      = JSON.parse(localStorage.getItem('pomo_stats')   || '{"sessions":0,"minutes":0,"tasks":0}');
 let sessionLog = JSON.parse(localStorage.getItem('pomo_history') || '[]');
@@ -2946,7 +2958,13 @@ function addNewRow(defaults={}) {
               saveRows();
               updateSubtasksHeader();
               showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
-              // If all subtasks done, pause main
+              // Count subtask completion toward stats
+              stats.tasks++;
+              stats.minutes += Math.round((sub.minutes || 25));
+              saveStats();
+              addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
+              refreshGoalsFromHistory();
+              updateDayProgress();
               const anyRunning = Object.keys(subTimers).length > 0;
               if (!anyRunning && timerId) {
                 clearInterval(timerId); timerId = null;
@@ -2982,6 +3000,7 @@ function addNewRow(defaults={}) {
       // ── Toggle done ──
       check.addEventListener('click', () => {
         stopSubTimer(idx);
+        const wasDone = sub.done;
         sub.done = !sub.done;
         secLeft = sub.done ? 0 : (sub.minutes || 25) * 60;
         sub.secLeft = secLeft;
@@ -2991,6 +3010,16 @@ function addNewRow(defaults={}) {
         refreshTimer();
         saveRows();
         updateSubtasksHeader();
+        // Only count stats when marking as done (not when undoing)
+        if (sub.done && !wasDone) {
+          stats.tasks++;
+          stats.minutes += Math.round(sub.minutes || 25);
+          saveStats();
+          addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
+          refreshGoalsFromHistory();
+          updateDayProgress();
+          showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
+        }
       });
 
       // ── Name edit (persist only, no timer sync) ──
@@ -3039,10 +3068,21 @@ function addNewRow(defaults={}) {
     toggleDone: (idx) => {
       const sub = rowSubtasks[idx];
       if (!sub) return;
+      const wasDone = sub.done;
       sub.done = !sub.done;
       if (sub.done) { stopSubTimer(idx); sub.secLeft = 0; }
       renderAllSubtasks();
       commitSubtasks();
+      // Count stats when marking as done (not when undoing)
+      if (sub.done && !wasDone) {
+        stats.tasks++;
+        stats.minutes += Math.round(sub.minutes || 25);
+        saveStats();
+        addHistory(sub.name || 'Sub-task', sub.minutes || 25, sub.tags || []);
+        refreshGoalsFromHistory();
+        updateDayProgress();
+        showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
+      }
     },
     deleteSub: (idx) => {
       stopSubTimer(idx);
