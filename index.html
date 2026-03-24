@@ -264,6 +264,52 @@
     background: var(--surface2); padding: 1px 3px;
   }
 
+  /* ── DAILY ACHIEVEMENTS MODAL ──────────────────────────────────────────────── */
+  .ach-overlay {
+    position: fixed; inset: 0; z-index: 11500;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(3px);
+  }
+  .ach-overlay.open { opacity: 1; pointer-events: all; }
+  .ach-modal {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    box-shadow: var(--shadow);
+    width: 560px; max-width: 96vw;
+    max-height: 88vh; overflow-y: auto;
+    animation: slideUp 0.22s ease;
+  }
+  .ach-modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--header-bg); color: var(--header-text);
+    border-bottom: 2px solid var(--border);
+    font-family: var(--font-title); font-size: 1.1rem;
+    letter-spacing: 3px; text-transform: uppercase;
+    position: sticky; top: 0; z-index: 1;
+  }
+  .ach-modal-close {
+    background: none; border: none; cursor: pointer;
+    color: var(--header-text); font-size: 1.3rem; line-height: 1; opacity: 0.7;
+  }
+  .ach-modal-close:hover { opacity: 1; }
+  .ach-modal-body {
+    padding: 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px;
+  }
+  .ach-modal-footer {
+    padding: 10px 20px; border-top: 1px solid var(--border);
+    font-size: 0.52rem; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); text-align: center;
+  }
+  /* Achievement chip inside the modal */
+  .ach-modal-body .achievement-chip {
+    flex: unset; min-width: unset;
+  }
+
   /* ── CLEAR DONE BTN ─────────────────────────────────────────────────────── */
   .clear-done-btn {
     border: 2px solid var(--border); background: var(--surface); color: var(--text-muted);
@@ -1952,10 +1998,7 @@
     <button class="icon-btn" id="finishDayBtn" style="background:var(--accent);border-color:var(--accent);color:#fff;">🏁 Finish Day</button>
     <button class="icon-btn" id="focusLockBtn">⊙ Focus</button>
     <button class="icon-btn" id="historyToggleBtn">◷ History</button>
-    <div class="view-switcher" id="viewSwitcher" title="Switch view">
-      <button class="view-btn active" data-view="table" title="Table view"><span class="view-icon">☰</span> Table</button>
-      <button class="view-btn" data-view="timeline" title="Timeline view"><span class="view-icon">◫</span> Timeline</button>
-    </div>
+    <button class="icon-btn" id="dailyAchievementsBtn">🏅 Daily Achievements</button>
     <button class="icon-btn settings-btn" id="settingsBtn">⚙ Settings</button>
     <div class="hamburger-wrap">
       <button class="hamburger-btn" id="drawerOpenBtn" title="Goals (G) · Templates (T) · Saved Days (S)">
@@ -1983,9 +2026,6 @@
 
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
-
-<!-- Daily Achievements -->
-<div class="achievements-bar" id="achievementsBar"></div>
 
 <!-- Day progress bar -->
 <div class="day-progress-wrap" id="dayProgressWrap">
@@ -2025,12 +2065,6 @@
       <button class="add-btn" onclick="addNewRow()">+ Add Activity</button>
       <button class="clear-done-btn" id="clearDoneBtn" title="Remove all completed rows">✓ Clear Done</button>
     </div>
-  </div>
-
-  <!-- ── TIMELINE VIEW ────────────────────────────────────────────────────── -->
-  <div id="timelineContainer">
-    <div id="timelineRows"></div>
-    <button class="tl-add-btn" onclick="addNewRow()">＋ Add Activity</button>
   </div>
 
   <div class="history-panel">
@@ -2138,7 +2172,17 @@ let goals      = JSON.parse(localStorage.getItem('pomo_goals')   || '[]');
 let savedDays  = JSON.parse(localStorage.getItem('pomo_saved_days') || '[]');
 let templates  = JSON.parse(localStorage.getItem('pomo_templates')  || '[]');
 
-// ── PROGRESS BAR COLOR ────────────────────────────────────────────────────────
+// ── DAILY STATS RESET ─────────────────────────────────────────────────────────
+(function() {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const lastReset = localStorage.getItem('pomo_stats_date');
+  if (lastReset !== today) {
+    stats = { sessions: 0, minutes: 0, tasks: 0 };
+    localStorage.setItem('pomo_stats', JSON.stringify(stats));
+    localStorage.setItem('pomo_stats_date', today);
+  }
+})();
+
 let progColor  = localStorage.getItem('pomo_prog_color') || '#ff4d00';
 
 function applyProgColor(color) {
@@ -2363,13 +2407,23 @@ function updatePlannedTime() {
 
 function updateDayProgress() {
   const allRows = document.querySelectorAll('.task-row');
-  const doneRows = document.querySelectorAll('.task-row.done');
-  const pct = allRows.length ? Math.round((doneRows.length / allRows.length) * 100) : 0;
-  const bar = document.getElementById('dayProgressBar');
-  const lbl = document.getElementById('dayProgressLabel');
+  let totalItems = 0, doneItems = 0;
+  allRows.forEach(row => {
+    const subs = rowSubtaskRegistry ? rowSubtaskRegistry.get(row) : null;
+    if (subs && subs.length > 0) {
+      totalItems += subs.length;
+      doneItems  += subs.filter(s => s.done).length;
+    } else {
+      totalItems++;
+      if (row.classList.contains('done')) doneItems++;
+    }
+  });
+  const pct = totalItems ? Math.round((doneItems / totalItems) * 100) : 0;
+  const bar  = document.getElementById('dayProgressBar');
+  const lbl  = document.getElementById('dayProgressLabel');
   const wrap = document.getElementById('dayProgressWrap');
-  if (bar) bar.style.width = pct + '%';
-  if (lbl) lbl.textContent = pct + '%';
+  if (bar)  bar.style.width = pct + '%';
+  if (lbl)  lbl.textContent = pct + '%';
   if (wrap) wrap.style.display = allRows.length ? '' : 'none';
 }
 
@@ -2406,11 +2460,13 @@ const ACHIEVEMENTS = [
 let _prevUnlocked = new Set();
 
 function renderAchievements() {
-  const bar = document.getElementById('achievementsBar');
-  if (!bar) return;
-  bar.innerHTML = '';
+  const body = document.getElementById('achModalBody');
+  if (!body) return;
+  body.innerHTML = '';
+  let unlockedCount = 0;
   ACHIEVEMENTS.forEach(ach => {
     const unlocked = ach.check(stats);
+    if (unlocked) unlockedCount++;
     const chip = document.createElement('div');
     chip.className = 'achievement-chip' + (unlocked ? ' unlocked' : '');
     chip.title = ach.desc;
@@ -2421,7 +2477,7 @@ function renderAchievements() {
         <div class="ach-desc">${ach.desc}</div>
       </div>
       <span class="ach-badge">${unlocked ? '✓' : ''}</span>`;
-    bar.appendChild(chip);
+    body.appendChild(chip);
     // Toast on first unlock
     if (unlocked && !_prevUnlocked.has(ach.id)) {
       if (_prevUnlocked.size > 0) { // skip initial render
@@ -2431,6 +2487,13 @@ function renderAchievements() {
     }
     if (unlocked) _prevUnlocked.add(ach.id);
   });
+  // Update button badge
+  const achBtn = document.getElementById('dailyAchievementsBtn');
+  if (achBtn) {
+    achBtn.textContent = unlockedCount > 0
+      ? `🏅 Daily Achievements (${unlockedCount}/${ACHIEVEMENTS.length})`
+      : '🏅 Daily Achievements';
+  }
 }
 
 // ── ROW SUBTASK REGISTRY ──────────────────────────────────────────────────────
@@ -2899,6 +2962,11 @@ function addNewRow(defaults={}) {
               saveRows();
               updateSubtasksHeader();
               showToast('✓ ' + (sub.name || 'Sub-task') + ' done', 'success');
+              // ── Count subtask as a full task in stats ──
+              stats.sessions++; stats.minutes += (sub.minutes || 25); stats.tasks++;
+              saveStats();
+              addHistory((sub.name || 'Sub-task') + ' [subtask of: ' + (actInput.value || 'Untitled') + ']', sub.minutes || 25, sub.tags || []);
+              refreshGoalsFromHistory();
               // If all subtasks done, pause main
               const anyRunning = Object.keys(subTimers).length > 0;
               if (!anyRunning && timerId) {
@@ -2935,6 +3003,7 @@ function addNewRow(defaults={}) {
       // ── Toggle done ──
       check.addEventListener('click', () => {
         stopSubTimer(idx);
+        const wasDone = sub.done;
         sub.done = !sub.done;
         secLeft = sub.done ? 0 : (sub.minutes || 25) * 60;
         sub.secLeft = secLeft;
@@ -2944,6 +3013,14 @@ function addNewRow(defaults={}) {
         refreshTimer();
         saveRows();
         updateSubtasksHeader();
+        // ── Count as task when manually marked done (not when un-done) ──
+        if (sub.done && !wasDone) {
+          const elapsed = Math.max(1, Math.round(((sub.minutes || 25) * 60 - secLeft) / 60)) || (sub.minutes || 25);
+          stats.sessions++; stats.minutes += (sub.minutes || 25); stats.tasks++;
+          saveStats();
+          addHistory((sub.name || 'Sub-task') + ' [subtask of: ' + (actInput.value || 'Untitled') + ']', sub.minutes || 25, sub.tags || []);
+          refreshGoalsFromHistory();
+        }
       });
 
       // ── Name edit (persist only, no timer sync) ──
@@ -2992,10 +3069,18 @@ function addNewRow(defaults={}) {
     toggleDone: (idx) => {
       const sub = rowSubtasks[idx];
       if (!sub) return;
+      const wasDone = sub.done;
       sub.done = !sub.done;
       if (sub.done) { stopSubTimer(idx); sub.secLeft = 0; }
       renderAllSubtasks();
       commitSubtasks();
+      // ── Count as task when marked done ──
+      if (sub.done && !wasDone) {
+        stats.sessions++; stats.minutes += (sub.minutes || 25); stats.tasks++;
+        saveStats();
+        addHistory((sub.name || 'Sub-task') + ' [subtask of: ' + (actInput.value || 'Untitled') + ']', sub.minutes || 25, sub.tags || []);
+        refreshGoalsFromHistory();
+      }
     },
     deleteSub: (idx) => {
       stopSubTimer(idx);
@@ -4463,613 +4548,35 @@ function triggerCsvExport() {
   showToast('CSV exported ✓', 'success');
 }
 
-// ── VIEW SYSTEM ───────────────────────────────────────────────────────────────
+// ── VIEW SYSTEM (table-only — timeline removed) ───────────────────────────────
 (function() {
-  let currentView = localStorage.getItem('pomo_view') || 'table';
-  let tickInterval = null;
-
-  // ── Patch openRowPopup to also accept a bare <tr> element ────────────────
-  const _orig = window.openRowPopup;
-  window.openRowPopup = function(btn, anchorEl) {
-    if (btn && btn.tagName === 'TR') {
-      // Pass the row directly — _orig already handles tagName === 'TR'
-      _orig(btn, anchorEl);
-    } else {
-      _orig(btn, anchorEl);
-    }
-  };
-
-  function applyView(view) {
-    ['table','timeline'].forEach(v => document.body.classList.remove('view-' + v));
-    if (view !== 'table') document.body.classList.add('view-' + view);
-    document.querySelectorAll('.view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-    currentView = view;
-    localStorage.setItem('pomo_view', view);
-    if (view === 'timeline') {
-      buildTimeline();
-      if (!tickInterval) tickInterval = setInterval(tickTimeline, 500);
-    } else {
-      reclaimSubtasks();
-      if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }
-    }
-  }
-
-  document.querySelectorAll('.view-btn').forEach(btn => {
-    btn.addEventListener('click', () => applyView(btn.dataset.view));
-  });
-
-  // ── Return subtask sections to their source rows before rebuild ───────────
-  function reclaimSubtasks() {
-    document.querySelectorAll('.av-subtasks-wrap').forEach(wrap => {
-      const section = wrap.querySelector('.subtasks-section');
-      if (section && wrap._sourceRow) {
-        const stage = wrap._sourceRow.querySelector('.activity-stage');
-        if (stage) stage.appendChild(section);
-      }
-    });
-    const rows = document.getElementById('timelineRows');
-    if (rows) rows.innerHTML = '';
-  }
-
-  // ── Read live data from a hidden task-row ─────────────────────────────────
-  function rowData(row) {
-    const timeCell = row.querySelector('.time-cell');
-    const pctEl    = row.querySelector('.pct-text');
-    const startBtn = row.querySelector('[data-role="start-btn"]');
-    const prioSel  = row.querySelector('.priority-select');
-    const goalInp  = row.querySelector('.goal-input');
-    return {
-      row,
-      name:     row.querySelector('.activity-input').value || '',
-      timeText: timeCell ? timeCell.textContent.trim() : '0:00',
-      pct:      pctEl ? (parseInt(pctEl.textContent) || 0) : 0,
-      prio:     prioSel ? prioSel.value : 'med',
-      goalMins: goalInp ? (parseFloat(goalInp.value) || 25) : 25,
-      running:  !!(startBtn && startBtn.textContent === '⏸'),
-      done:     row.classList.contains('done'),
-      urgent:   !!(timeCell && timeCell.classList.contains('urgent')),
-      tags:     JSON.parse(row.dataset.tags || '[]'),
-      startTime: row.dataset.startTime || '',
-    };
-  }
-
-  // ── Assign stable IDs to rows ─────────────────────────────────────────────
-  let _vid = 0;
-  function ensureVid(row) {
-    if (!row.dataset.vid) row.dataset.vid = 'r' + (++_vid);
-    return row.dataset.vid;
-  }
-
-  // ── Build one snake node ──────────────────────────────────────────────────
-  function buildTimelineCard(row, index, isLast) {
-    const d   = rowData(row);
-    const vid = ensureVid(row);
-
-    const node = document.createElement('div');
-    node.className = 'tl-node' +
-      (d.done    ? ' av-done'    : '') +
-      (d.running ? ' av-running' : '');
-    node.dataset.rowId = vid;
-
-    // ── Dot ──────────────────────────────────────────────────────────────
-    const dot = document.createElement('div');
-    dot.className = 'tl-node-dot' +
-      (d.done ? ' done-dot' : '') +
-      (d.running && !d.done ? ' running-dot' : '');
-
-    // ── Label card ───────────────────────────────────────────────────────
-    const label = document.createElement('div');
-    label.className = 'tl-node-label';
-
-    // Name (editable input)
-    const nameWrap = document.createElement('div');
-    nameWrap.className = 'tl-node-name';
-    const nameInp = document.createElement('input');
-    nameInp.type = 'text'; nameInp.value = d.name;
-    nameInp.placeholder = 'Untitled';
-    nameInp.addEventListener('input', () => {
-      const hidden = row.querySelector('.activity-input');
-      if (hidden) { hidden.value = nameInp.value; hidden.dispatchEvent(new Event('input')); }
-    });
-    nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') nameInp.blur(); });
-    nameWrap.appendChild(nameInp);
-
-    // Timer
-    const timer = document.createElement('div');
-    timer.className = 'tl-node-timer' + (d.urgent ? ' urgent' : '');
-    timer.textContent = d.timeText;
-
-    // Progress bar
-    const barWrap = document.createElement('div');
-    barWrap.className = 'tl-node-bar-wrap';
-    const bar = document.createElement('div');
-    bar.className = 'tl-node-bar';
-    bar.style.width = d.pct + '%';
-    barWrap.appendChild(bar);
-
-    // Meta: prio + pct
-    const meta = document.createElement('div');
-    meta.className = 'tl-node-meta';
-    const prio = document.createElement('span');
-    prio.className = 'tl-node-prio ' + d.prio;
-    prio.textContent = d.prio.toUpperCase();
-    const pctB = document.createElement('span');
-    pctB.className = 'tl-node-pct';
-    pctB.textContent = d.pct + '%';
-    meta.appendChild(prio); meta.appendChild(pctB);
-
-    // Tags
-    let tagsEl = null;
-    if (d.tags.length) {
-      tagsEl = document.createElement('div');
-      tagsEl.className = 'tl-node-tags';
-      d.tags.forEach(t => {
-        const chip = document.createElement('span');
-        chip.className = 'tl-node-tag'; chip.textContent = t;
-        tagsEl.appendChild(chip);
-      });
-    }
-
-    // Action buttons
-    const btns = document.createElement('div');
-    btns.className = 'tl-node-btns';
-
-    const startBtn2 = document.createElement('button');
-    startBtn2.className = 'tl-node-btn start-btn' + (d.done ? ' done-state' : '');
-    startBtn2.textContent = d.done ? '✓' : (d.running ? '⏸' : '▶');
-    startBtn2.title = d.done ? 'Done' : d.running ? 'Pause' : 'Start';
-    startBtn2.addEventListener('click', () => {
-      const hBtn = row.querySelector('[data-role="start-btn"]');
-      if (hBtn && !d.done) hBtn.click();
-      setTimeout(buildTimeline, 60);
-    });
-
-    const settingsBtn = document.createElement('button');
-    settingsBtn.className = 'tl-node-btn';
-    settingsBtn.setAttribute('data-open-row-popup', '1');
-    settingsBtn.textContent = '⚙'; settingsBtn.title = 'Settings';
-    settingsBtn.addEventListener('click', () => {
-      window.openRowPopup(row, settingsBtn);
-      setTimeout(buildTimeline, 400);
-    });
-
-    const pipBtn2 = document.createElement('button');
-    pipBtn2.className = 'tl-node-btn tl-pip-btn';
-    pipBtn2.textContent = '⧉'; pipBtn2.title = 'PiP';
-    pipBtn2.addEventListener('click', () => {
-      const rowPipBtn = row.querySelector('[data-role="pip-btn"]');
-      if (rowPipBtn) rowPipBtn.click();
-    });
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'tl-node-btn del-btn';
-    deleteBtn.textContent = '×'; deleteBtn.title = 'Remove';
-    deleteBtn.addEventListener('click', () => {
-      // Reclaim subtasks
-      const subSection = row.querySelector('.subtasks-section');
-      if (subSection) {
-        const stage = row.querySelector('.activity-stage');
-        if (stage) stage.appendChild(subSection);
-      }
-      row.remove(); saveRows(); updatePlannedTime(); buildTimeline();
-    });
-
-    btns.appendChild(startBtn2);
-    btns.appendChild(settingsBtn);
-    btns.appendChild(pipBtn2);
-    btns.appendChild(deleteBtn);
-
-    // Assemble label
-    label.appendChild(nameWrap);
-    label.appendChild(timer);
-    label.appendChild(barWrap);
-    if (tagsEl) label.appendChild(tagsEl);
-    label.appendChild(meta);
-    label.appendChild(btns);
-
-    // ── Inline subtask list ───────────────────────────────────────────────
-    const api = row._subtaskAPI;
-    if (api) {
-      const subList = document.createElement('div');
-      subList.className = 'tl-sub-list';
-      subList.dataset.rowId = vid;
-
-      const subHeader = document.createElement('div');
-      subHeader.className = 'tl-sub-header';
-      const subToggle = document.createElement('button');
-      subToggle.className = 'tl-sub-header-toggle open';
-      subToggle.textContent = '▶';
-      subToggle.title = 'Show/hide sub-tasks';
-      const subLabel = document.createElement('span');
-      subLabel.textContent = 'Sub-tasks';
-      const subCount2 = document.createElement('span');
-      subCount2.className = 'tl-sub-header-count';
-      const { done: sdone, total: stotal } = api.getCount();
-      subCount2.textContent = `${sdone}/${stotal}`;
-      const subAddBtn = document.createElement('button');
-      subAddBtn.className = 'tl-sub-header-add';
-      subAddBtn.textContent = '＋';
-      subAddBtn.title = 'Add sub-task';
-      subAddBtn.addEventListener('click', () => window.openSubtaskPopup(row, true));
-      subHeader.appendChild(subToggle);
-      subHeader.appendChild(subLabel);
-      subHeader.appendChild(subCount2);
-      subHeader.appendChild(subAddBtn);
-      subList.appendChild(subHeader);
-
-      // Collapsible wrapper for items
-      const itemsWrap = document.createElement('div');
-      itemsWrap.className = 'tl-sub-items-wrap';
-
-      // Wire toggle
-      subToggle.addEventListener('click', () => {
-        const isOpen = !itemsWrap.classList.contains('collapsed');
-        if (isOpen) {
-          itemsWrap.style.maxHeight = itemsWrap.scrollHeight + 'px';
-          requestAnimationFrame(() => { itemsWrap.classList.add('collapsed'); });
-          subToggle.classList.remove('open');
-        } else {
-          itemsWrap.classList.remove('collapsed');
-          itemsWrap.style.maxHeight = itemsWrap.scrollHeight + 'px';
-          setTimeout(() => { itemsWrap.style.maxHeight = 'none'; }, 260);
-          subToggle.classList.add('open');
-        }
-      });
-
-      // Render each subtask inline
-      const subs = api.getSubtasks();
-      subs.forEach((sub, idx) => {
-        const secLeft  = sub.secLeft !== undefined ? sub.secLeft : (sub.minutes || 25) * 60;
-        const isRunning = !!api.getSubTimers()[idx];
-        const item = document.createElement('div');
-        item.className = 'tl-sub-item' + (sub.done ? ' tl-sub-done' : '');
-
-        const chk = document.createElement('div');
-        chk.className = 'tl-sub-check';
-        chk.textContent = sub.done ? '✓' : '○';
-        chk.addEventListener('click', () => { api.toggleDone(idx); buildTimeline(); });
-
-        const nm = document.createElement('div');
-        nm.className = 'tl-sub-name';
-        nm.textContent = sub.name || 'Sub-task';
-        nm.title = sub.name || '';
-
-        const tim = document.createElement('div');
-        tim.className = 'tl-sub-timer' + (isRunning ? ' tl-sub-running' : '') + (sub.done ? ' tl-sub-done-t' : '');
-        tim.textContent = fmt(secLeft);
-
-        const stBtn = document.createElement('button');
-        stBtn.className = 'tl-sub-startbtn' + (isRunning ? ' tl-sub-running' : '');
-        stBtn.textContent = sub.done ? '✓' : (isRunning ? '⏸' : '▶');
-        stBtn.addEventListener('click', () => { api.startSub(idx); setTimeout(buildTimeline, 80); });
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'tl-sub-startbtn';
-        delBtn.style.cssText = 'color:var(--tag-high);';
-        delBtn.textContent = '×';
-        delBtn.title = 'Remove sub-task';
-        delBtn.addEventListener('click', () => { api.deleteSub(idx); buildTimeline(); });
-
-        item.appendChild(chk);
-        item.appendChild(nm);
-        item.appendChild(tim);
-        item.appendChild(stBtn);
-        item.appendChild(delBtn);
-        itemsWrap.appendChild(item);
-
-        // Interactive tags row in timeline (always shown, even when empty)
-        const tlTagRow = document.createElement('div');
-        tlTagRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;align-items:center;padding:3px 8px 4px 26px;background:var(--surface2);border-bottom:1px solid var(--border);';
-        if (!sub.tags) sub.tags = [];
-
-        function renderTlTags() {
-          tlTagRow.innerHTML = '';
-          sub.tags.forEach((t, ti) => {
-            const chip = document.createElement('span');
-            chip.className = 'subtask-tag-chip';
-            chip.innerHTML = `${t}<span class="subtask-tag-remove">×</span>`;
-            chip.querySelector('.subtask-tag-remove').addEventListener('click', e => {
-              e.stopPropagation();
-              sub.tags.splice(ti, 1);
-              saveRows();
-              renderTlTags();
-            });
-            tlTagRow.appendChild(chip);
-          });
-          const tagInp = document.createElement('input');
-          tagInp.type = 'text';
-          tagInp.className = 'subtask-tag-input';
-          tagInp.placeholder = '+ tag…';
-          tagInp.addEventListener('keydown', e => {
-            if (e.key === 'Enter' || e.key === ',') {
-              e.preventDefault();
-              const val = tagInp.value.trim().toLowerCase().replace(',', '');
-              if (val && !sub.tags.includes(val)) { sub.tags.push(val); saveRows(); renderTlTags(); }
-              else tagInp.value = '';
-            }
-            if (e.key === 'Backspace' && !tagInp.value && sub.tags.length) {
-              sub.tags.pop(); saveRows(); renderTlTags();
-            }
-          });
-          tlTagRow.appendChild(tagInp);
-        }
-        renderTlTags();
-        itemsWrap.appendChild(tlTagRow);
-      });
-
-      subList.appendChild(itemsWrap);
-      label.appendChild(subList);
-    }
-
-    node.appendChild(dot);
-    node.appendChild(label);
-    return node;
-  }
-
-  // ── NODES_PER_ROW: how many nodes fit per band ────────────────────────────
-  const NODES_PER_BAND = 3;
-
-  // ── Draw the SVG snake path for a band ────────────────────────────────────
-  function drawSnakeSVG(container, bandIndex, nodeCount, totalBands) {
-    // We'll draw the horizontal line through the dots, plus end curves
-    // The actual SVG is positioned after layout using getBoundingClientRect
-    // We use a ResizeObserver-free approach: draw after a rAF
-    requestAnimationFrame(() => {
-      const nodes = container.querySelectorAll('.tl-node');
-      if (!nodes.length) return;
-      const containerRect = container.getBoundingClientRect();
-
-      // Collect dot centers relative to container
-      const dotCenters = [];
-      nodes.forEach(n => {
-        const dot = n.querySelector('.tl-node-dot');
-        if (!dot) return;
-        const r = dot.getBoundingClientRect();
-        dotCenters.push({
-          x: r.left - containerRect.left + r.width / 2,
-          y: r.top  - containerRect.top  + r.height / 2,
-        });
-      });
-
-      if (!dotCenters.length) return;
-
-      // Build path: straight line through all dots
-      let pathD = `M ${dotCenters[0].x} ${dotCenters[0].y}`;
-      for (let i = 1; i < dotCenters.length; i++) {
-        pathD += ` L ${dotCenters[i].x} ${dotCenters[i].y}`;
-      }
-
-      let svg = container.querySelector('.tl-band-svg');
-      if (!svg) {
-        svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.className.baseVal = 'tl-band-svg';
-        svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible;';
-        container.style.position = 'relative';
-        container.insertBefore(svg, container.firstChild);
-      }
-      svg.innerHTML = `
-        <path class="tl-path-line" d="${pathD}"
-          stroke="var(--border)" stroke-width="2.5" fill="none"
-          stroke-dasharray="none"/>`;
-    });
-  }
-
-  // ── Full rebuild of the timeline ──────────────────────────────────────────
-  function buildTimeline() {
-    reclaimSubtasks();
-    const container = document.getElementById('timelineRows');
-    if (!container) return;
-    container.innerHTML = '';
-
-    const visible = Array.from(document.querySelectorAll('.task-row'))
-      .filter(r => !r.classList.contains('search-hidden'));
-
-    if (!visible.length) return;
-
-    // Chunk into bands of NODES_PER_BAND
-    const bands = [];
-    for (let i = 0; i < visible.length; i += NODES_PER_BAND) {
-      bands.push(visible.slice(i, i + NODES_PER_BAND));
-    }
-
-    // Wrap everything in a snake container
-    const snake = document.createElement('div');
-    snake.style.cssText = 'position:relative;';
-
-    bands.forEach((bandRows, bandIdx) => {
-      const isReverse = bandIdx % 2 === 1;
-
-      // Band wrapper
-      const band = document.createElement('div');
-      band.className = 'tl-band' + (isReverse ? ' reverse' : '');
-      band.style.cssText = 'position:relative;margin-bottom:0;';
-
-      // Nodes row
-      const nodesRow = document.createElement('div');
-      nodesRow.className = 'tl-nodes-row';
-
-      bandRows.forEach((row, i) => {
-        const globalIdx = bandIdx * NODES_PER_BAND + i;
-        const isLast = globalIdx === visible.length - 1;
-        nodesRow.appendChild(buildTimelineCard(row, globalIdx, isLast));
-      });
-
-      band.appendChild(nodesRow);
-
-      // Draw connecting line after layout
-      requestAnimationFrame(() => drawSnakeSVG(nodesRow, bandIdx, bandRows.length, bands.length));
-
-      // Draw curve connector between bands (except after last band)
-      if (bandIdx < bands.length - 1) {
-        const curveDiv = document.createElement('div');
-        curveDiv.style.cssText = 'height:90px;position:relative;overflow:visible;';
-        // SVG curve drawn after layout
-        band._curveDiv = curveDiv;
-        band.appendChild(curveDiv);
-      }
-
-      snake.appendChild(band);
-    });
-
-    container.appendChild(snake);
-
-    // Draw inter-band curves after full layout
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        drawInterBandCurves(snake, bands, visible);
-      });
-    });
-  }
-
-  // ── Draw the curved connectors between bands ──────────────────────────────
-  function drawInterBandCurves(snake, bands, visible) {
-    const snakeRect = snake.getBoundingClientRect();
-    const bandEls = snake.querySelectorAll('.tl-band');
-
-    bandEls.forEach((bandEl, bandIdx) => {
-      if (bandIdx >= bands.length - 1) return;
-      const curveDiv = bandEl._curveDiv;
-      if (!curveDiv) return;
-
-      const isReverse = bandIdx % 2 === 1;
-      const nodes = bandEl.querySelectorAll('.tl-node');
-      if (!nodes.length) return;
-
-      const nextBand = bandEls[bandIdx + 1];
-      const nextNodes = nextBand ? nextBand.querySelectorAll('.tl-node') : null;
-      if (!nextNodes || !nextNodes.length) return;
-
-      // Last dot of this band
-      const lastDot = nodes[nodes.length - 1].querySelector('.tl-node-dot');
-      // First dot of next band
-      const firstDot = nextNodes[0].querySelector('.tl-node-dot');
-
-      if (!lastDot || !firstDot) return;
-
-      const curveDivRect = curveDiv.getBoundingClientRect();
-
-      const ldr = lastDot.getBoundingClientRect();
-      const fdr = firstDot.getBoundingClientRect();
-
-      // Coords relative to curveDiv
-      const x1 = ldr.left - curveDivRect.left + ldr.width / 2;
-      const y1 = ldr.top  - curveDivRect.top  + ldr.height / 2;
-      const x2 = fdr.left - curveDivRect.left + fdr.width / 2;
-      const y2 = fdr.top  - curveDivRect.top  + fdr.height / 2;
-
-      // Cubic bezier curve sweeping down
-      const cp1x = x1; const cp1y = y1 + (y2 - y1) * 0.6;
-      const cp2x = x2; const cp2y = y2 - (y2 - y1) * 0.3;
-
-      const pathD = `M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
-
-      const svgW  = Math.abs(curveDivRect.width) + 20;
-      const svgH  = Math.abs(y2 - y1) + Math.abs(curveDivRect.height) + 40;
-
-      let svg = curveDiv.querySelector('svg');
-      if (!svg) {
-        svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.style.cssText = 'position:absolute;inset:-20px -10px;width:calc(100% + 20px);height:calc(100% + 40px);pointer-events:none;overflow:visible;';
-        curveDiv.appendChild(svg);
-      }
-      svg.innerHTML = `<path d="${pathD}" stroke="var(--border)" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
-    });
-  }
-
-  // ── Tick: update live data without full rebuild ───────────────────────────
-  function tickTimeline() {
-    const container = document.getElementById('timelineRows');
-    if (!container) return;
-
-    container.querySelectorAll('.tl-node[data-row-id]').forEach(node => {
-      const row = document.querySelector(`.task-row[data-vid="${node.dataset.rowId}"]`);
-      if (!row) return;
-      const d = rowData(row);
-
-      // Dot state
-      const dot = node.querySelector('.tl-node-dot');
-      if (dot) {
-        dot.classList.toggle('done-dot',    d.done);
-        dot.classList.toggle('running-dot', d.running && !d.done);
-      }
-
-      // Node state
-      node.classList.toggle('av-done',    d.done);
-      node.classList.toggle('av-running', d.running && !d.done);
-
-      // Timer
-      const timer = node.querySelector('.tl-node-timer');
-      if (timer) { timer.textContent = d.timeText; timer.classList.toggle('urgent', d.urgent); }
-
-      // Bar
-      const bar = node.querySelector('.tl-node-bar');
-      if (bar) bar.style.width = d.pct + '%';
-
-      // Pct
-      const pctEl = node.querySelector('.tl-node-pct');
-      if (pctEl) pctEl.textContent = d.pct + '%';
-
-      // Name
-      const nameInp = node.querySelector('.tl-node-name input');
-      if (nameInp && document.activeElement !== nameInp) nameInp.value = d.name;
-
-      // Start btn
-      const startBtn2 = node.querySelector('.start-btn');
-      if (startBtn2) {
-        startBtn2.textContent = d.done ? '✓' : (d.running ? '⏸' : '▶');
-        startBtn2.classList.toggle('done-state', d.done);
-      }
-
-      // Subtask inline list timers
-      const api = row._subtaskAPI;
-      if (api) {
-        const subs    = api.getSubtasks();
-        const timers  = api.getSubTimers();
-        const items   = node.querySelectorAll('.tl-sub-item');
-        const countEl = node.querySelector('.tl-sub-header-count');
-        if (countEl) {
-          const { done: sd, total: st } = api.getCount();
-          countEl.textContent = `${sd}/${st}`;
-        }
-        items.forEach((item, idx) => {
-          const sub = subs[idx];
-          if (!sub) return;
-          const isRunning = !!timers[idx];
-          const secLeft = sub.secLeft !== undefined ? sub.secLeft : (sub.minutes || 25) * 60;
-          const timEl = item.querySelector('.tl-sub-timer');
-          if (timEl) {
-            timEl.textContent = fmt(secLeft);
-            timEl.classList.toggle('tl-sub-running', isRunning);
-            timEl.classList.toggle('tl-sub-done-t',  sub.done);
-          }
-          const stBtn = item.querySelector('.tl-sub-startbtn');
-          if (stBtn) stBtn.textContent = sub.done ? '✓' : (isRunning ? '⏸' : '▶');
-          item.classList.toggle('tl-sub-done', sub.done);
-          const chk = item.querySelector('.tl-sub-check');
-          if (chk) chk.textContent = sub.done ? '✓' : '○';
-        });
-      }
-    });
-  }
-
-  // ── Expose & MutationObserver ─────────────────────────────────────────────
-  window.refreshAltViews = function() {
-    if (currentView === 'timeline') buildTimeline();
-  };
-
-  const observer = new MutationObserver(() => {
-    if (currentView === 'timeline') {
-      clearTimeout(observer._t);
-      observer._t = setTimeout(buildTimeline, 140);
-    }
-  });
-  const tb = document.getElementById('tableBody');
-  if (tb) observer.observe(tb, { childList: true, attributes: true,
-    attributeFilter: ['class','data-goal','data-tags'], subtree: false });
-
-  applyView(currentView);
+  // Noop stubs so any lingering references don't throw
+  window.refreshAltViews = function() {};
+  // Table is always the active view — nothing to toggle
 })();
 
+
+// ── DAILY ACHIEVEMENTS MODAL ──────────────────────────────────────────────────
+(function() {
+  const overlay  = document.getElementById('achOverlay');
+  const closeBtn = document.getElementById('achModalClose');
+  const triggerBtn = document.getElementById('dailyAchievementsBtn');
+
+  function openAch() {
+    renderAchievements(); // refresh content each open
+    overlay.classList.add('open');
+  }
+  function closeAch() {
+    overlay.classList.remove('open');
+  }
+
+  if (triggerBtn) triggerBtn.addEventListener('click', openAch);
+  if (closeBtn)   closeBtn.addEventListener('click', closeAch);
+  overlay.addEventListener('mousedown', e => { if (e.target === overlay) closeAch(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) closeAch();
+  });
+})();
 
 saveStats(); renderHistory(); renderGoals(); renderSavedDays(); renderTemplates(); applyHistoryCollapse(); renderAchievements();
 if(savedRows.length) savedRows.forEach(r=>addNewRow(r));
@@ -5109,6 +4616,18 @@ setInterval(saveRows, 5000);
 
 }); // end DOMContentLoaded
 </script>
+
+<!-- ── DAILY ACHIEVEMENTS MODAL ───────────────────────────────────────────── -->
+<div class="ach-overlay" id="achOverlay">
+  <div class="ach-modal" id="achModal">
+    <div class="ach-modal-header">
+      <span>🏅 Daily Achievements</span>
+      <button class="ach-modal-close" id="achModalClose">✕</button>
+    </div>
+    <div class="ach-modal-body" id="achModalBody"></div>
+    <div class="ach-modal-footer">Achievements reset daily at midnight · Based on today's stats</div>
+  </div>
+</div>
 
 <!-- ── SUBTASK POPUP MODAL ─────────────────────────────────────────────────── -->
 <div class="subtask-overlay" id="subtaskOverlay">
